@@ -5,42 +5,30 @@
 
 SchemaLens is a lightweight toolkit for exploring, visualizing, and understanding data schemas.
 
-<!-- ## Features
+## Run Entire App in Docker
 
-- Inspect schema structure quickly
-- Visualize entities and relationships
-- Improve onboarding for unfamiliar datasets
-- Support iterative schema documentation
+All services run in containers (frontend + Python API), so you do not need local Node or Python setup.
 
-## Getting Started
+### Prerequisites
 
-Clone the repository:
+- Docker Desktop (or Docker Engine + Compose plugin)
+
+### Start
+
+From the repository root:
 
 ```bash
-git clone <your-repo-url>
-cd SchemaLens
+docker compose -f schemalens/infra/docker-compose.yml up --build
 ```
 
-## Project Structure
+### URLs
 
-```text
-.
-├── README.md
-└── images/
-	└── schemagraph-banner.svg
+- Frontend: http://localhost:5173
+- API: http://localhost:8000
+- Health: http://localhost:8000/health
+
+### Stop
+
+```bash
+docker compose -f schemalens/infra/docker-compose.yml down
 ```
-
-## Roadmap
-
-- Define core schema model
-- Add parser/loader integrations
-- Generate interactive graph views
-- Publish usage examples
-
-## Contributing
-
-Contributions are welcome. Open an issue to discuss ideas, bug reports, or planned improvements.
-
-## License -->
-
-<!-- TBD -->

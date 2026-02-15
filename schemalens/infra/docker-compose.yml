@@ -1,0 +1,28 @@
+services:
+  api:
+    build:
+      context: ../apps/api
+      dockerfile: Dockerfile
+    container_name: schemalens-api
+    ports:
+      - "8000:8000"
+    volumes:
+      - ../apps/api:/app
+    environment:
+      - PYTHONDONTWRITEBYTECODE=1
+      - PYTHONUNBUFFERED=1
+
+  web:
+    build:
+      context: ../apps/web
+      dockerfile: Dockerfile
+    container_name: schemalens-web
+    ports:
+      - "5173:5173"
+    volumes:
+      - ../apps/web:/app
+      - /app/node_modules
+    environment:
+      - CHOKIDAR_USEPOLLING=true
+    depends_on:
+      - api
