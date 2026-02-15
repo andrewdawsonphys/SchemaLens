@@ -1,4 +1,21 @@
 services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: schemalens-postgres
+    ports:
+      - "5432:5432"
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_DB=schemalens
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d schemalens"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
   api:
     build:
       context: ../apps/api
@@ -11,6 +28,14 @@ services:
     environment:
       - PYTHONDONTWRITEBYTECODE=1
       - PYTHONUNBUFFERED=1
+      - POSTGRES_HOST=postgres
+      - POSTGRES_PORT=5432
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_DB=schemalens
+    depends_on:
+      postgres:
+        condition: service_healthy
 
   web:
     build:
@@ -26,3 +51,6 @@ services:
       - CHOKIDAR_USEPOLLING=true
     depends_on:
       - api
+
+volumes:
+  postgres_data:
