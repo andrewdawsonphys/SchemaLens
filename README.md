@@ -13,6 +13,20 @@ Current project status:
 - Basic API returning database table schemas
 - ERD generation using React Flow (XYFlow)
 
+
+## Progress Update (23 Feb 2026)
+
+### What’s New
+
+- Recommendation engine added: detects inconsistent naming conventions in tables/columns
+- Recommendations panel in frontend with collapse/expand and refresh controls
+
+### Screenshots
+
+![SchemaLens UI - 23 Feb 2026](images/current_status-23-02-26.png "SchemaLens UI 23 Feb 2026")
+
+---
+
 ## Progress Update (20 Feb 2026)
 
 ### What’s Done
