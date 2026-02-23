@@ -7,7 +7,7 @@ SchemaLens is a lightweight toolkit for exploring, visualizing, and understandin
 
 ## Current Status
 
-![Current status](images/current_status.png "Current Status")
+![Current status](images/current_status-23-02-26.png "Current Status")
 
 Current project status:
 - Basic API returning database table schemas
