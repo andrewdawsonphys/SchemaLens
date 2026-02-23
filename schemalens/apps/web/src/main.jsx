@@ -224,7 +224,7 @@ function App() {
   return <>
     <div className="app-shell">
       <TopBar/>
-      <div className={`app-content ${recommendationsCollapsed ? "is-collapsed" : ""}`}>
+      <div className="app-content">
         <div className="graph-container">
           <ReactFlow
             nodeTypes={nodeTypes}
@@ -239,18 +239,7 @@ function App() {
             <Controls />
           </ReactFlow>
         </div>
-        {recommendationsCollapsed ? (
-          <button
-            type="button"
-            className="recommendations-panel__reopen"
-            onClick={() => setRecommendationsCollapsed(false)}
-            aria-label="Expand recommendations"
-            title="Expand recommendations"
-          >
-            &lt;&lt;
-          </button>
-        ) : null}
-        <aside className={`recommendations-panel ${recommendationsCollapsed ? "is-collapsed" : ""}`} aria-live="polite">
+        <aside className="recommendations-panel" aria-live="polite">
           <div className="recommendations-panel__header">
             <h2 className="recommendations-panel__title">Recommendations</h2>
             <div className="recommendations-panel__actions">
