@@ -11,6 +11,7 @@ const LAYOUT_DIRECTION = "LR";
 const DEFAULT_NODE_WIDTH = 280;
 const DEFAULT_NODE_HEIGHT = 64;
 const COLUMN_ROW_HEIGHT = 32;
+const API_BASE_URL = "http://localhost:8000/api/v1";
 
 function getNodeSize(node) {
   const columnCount = node?.data?.columns?.length ?? 0;
@@ -130,9 +131,25 @@ const nodeTypes = {
   erdNode: ErdNode,
 };
 
+function normalizeRecommendations(payload) {
+  if (Array.isArray(payload)) {
+    return payload;
+  }
+
+  if (Array.isArray(payload?.recommendations)) {
+    return payload.recommendations;
+  }
+
+  return [];
+}
+
 function App() {
 
   const [flow, setFlow] = useState({ nodes: [], edges: [] });
+  const [recommendations, setRecommendations] = useState([]);
+  const [recommendationsLoading, setRecommendationsLoading] = useState(true);
+  const [recommendationsError, setRecommendationsError] = useState("");
+  const [recommendationsCollapsed, setRecommendationsCollapsed] = useState(false);
 
   const onNodesChange = (changes) => {
     setFlow((prev) => ({
@@ -146,7 +163,7 @@ function App() {
 
     async function loadSchema() {
       try {
-        const schemaResponse = await fetch("http://localhost:8000/api/v1/schema");
+        const schemaResponse = await fetch(`${API_BASE_URL}/schema`);
         if (!schemaResponse.ok) throw new Error(`API Error: ${schemaResponse.status}`);
 
         const schemaData = await schemaResponse.json();
@@ -154,7 +171,7 @@ function App() {
         let constraintsData = [];
 
         try {
-          const constraintsResponse = await fetch("http://localhost:8000/api/v1/constraints");
+          const constraintsResponse = await fetch(`${API_BASE_URL}/constraints`);
           if (constraintsResponse.ok) {
             const parsed = await constraintsResponse.json();
 
@@ -178,22 +195,115 @@ function App() {
     loadSchema();
   }, []);
 
+  useEffect(() => {
+    loadRecommendations();
+  }, []);
+
+  async function loadRecommendations() {
+    setRecommendationsLoading(true);
+    setRecommendationsError("");
+
+    try {
+      const response = await fetch(`${API_BASE_URL}/recommendations`);
+
+      if (!response.ok) {
+        throw new Error(`API Error: ${response.status}`);
+      }
+
+      const payload = await response.json();
+      const normalized = normalizeRecommendations(payload);
+      setRecommendations(normalized);
+    } catch (error) {
+      setRecommendationsError("Failed to load recommendations.");
+      setRecommendations([]);
+    } finally {
+      setRecommendationsLoading(false);
+    }
+  }
+
   return <>
     <div className="app-shell">
       <TopBar/>
-      <div className="graph-container">
-        <ReactFlow
-          nodeTypes={nodeTypes}
-          nodes={flow.nodes}
-          edges={flow.edges}
-          onNodesChange={onNodesChange}
-          nodesDraggable={true}
-          fitView
-          proOptions={{ hideAttribution: true }}
-        >
-          <Background />
-          <Controls />
-        </ReactFlow>
+      <div className={`app-content ${recommendationsCollapsed ? "is-collapsed" : ""}`}>
+        <div className="graph-container">
+          <ReactFlow
+            nodeTypes={nodeTypes}
+            nodes={flow.nodes}
+            edges={flow.edges}
+            onNodesChange={onNodesChange}
+            nodesDraggable={true}
+            fitView
+            proOptions={{ hideAttribution: true }}
+          >
+            <Background />
+            <Controls />
+          </ReactFlow>
+        </div>
+        {recommendationsCollapsed ? (
+          <button
+            type="button"
+            className="recommendations-panel__reopen"
+            onClick={() => setRecommendationsCollapsed(false)}
+            aria-label="Expand recommendations"
+            title="Expand recommendations"
+          >
+            &lt;&lt;
+          </button>
+        ) : null}
+        <aside className={`recommendations-panel ${recommendationsCollapsed ? "is-collapsed" : ""}`} aria-live="polite">
+          <div className="recommendations-panel__header">
+            <h2 className="recommendations-panel__title">Recommendations</h2>
+            <div className="recommendations-panel__actions">
+              <button
+                type="button"
+                className="toolbar-btn recommendations-panel__toggle"
+                onClick={() => setRecommendationsCollapsed((value) => !value)}
+                aria-expanded={!recommendationsCollapsed}
+                aria-label={recommendationsCollapsed ? "Expand recommendations" : "Collapse recommendations"}
+              >
+                {recommendationsCollapsed ? "<<" : ">>"}
+              </button>
+              <button
+                type="button"
+                className="toolbar-btn recommendations-panel__refresh"
+                onClick={loadRecommendations}
+                disabled={recommendationsLoading}
+                aria-label="Refresh recommendations"
+                title="Refresh recommendations"
+              >
+                {recommendationsLoading ? "…" : "↻"}
+              </button>
+            </div>
+          </div>
+
+          {recommendationsCollapsed ? (
+            <p className="recommendations-panel__message">Recommendations list is collapsed.</p>
+          ) : recommendationsError ? (
+            <p className="recommendations-panel__message">{recommendationsError}</p>
+          ) : recommendationsLoading ? (
+            <p className="recommendations-panel__message">Loading recommendations...</p>
+          ) : recommendations.length === 0 ? (
+            <p className="recommendations-panel__message">No recommendations available.</p>
+          ) : (
+            <ul className="recommendations-list">
+              {recommendations.map((item, index) => {
+                const key = `${item.name ?? "rec"}-${item.table_name ?? "table"}-${item.element_name ?? "element"}-${index}`;
+
+                return (
+                  <li className="recommendation-card" key={key}>
+                    <h3 className="recommendation-card__name">{item.name ?? "Recommendation"}</h3>
+                    <p className="recommendation-card__description">{item.description ?? "No description provided."}</p>
+                    <p className="recommendation-card__meta">
+                      {(item.table_name || "Unknown table")}
+                      {item.element_name ? ` · ${item.element_name}` : ""}
+                      {item.element_type ? ` (${item.element_type})` : ""}
+                    </p>
+                  </li>
+                );
+              })}
+            </ul>
+          )}
+        </aside>
       </div>
     </div>
   </>

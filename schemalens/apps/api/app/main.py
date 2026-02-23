@@ -2,6 +2,7 @@ import psycopg
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from .crud import get_db_schema, get_db_constraints
+from .recommendation_engine import RecommendationEngine
 
 app = FastAPI(title="SchemaLens API", version="0.1.0")
 
@@ -48,3 +49,16 @@ def get_constraints():
     except psycopg.Error as e:
         return {"error": str(e)}
     return constraints
+
+@app.get("/api/v1/recommendations")
+def get_recommendations():
+    """
+    Endpoint to retrieve recommendations for improving the database schema based on
+    the retrieved schema and constraints information.
+    """
+    try:
+        engine = RecommendationEngine()
+        recommendations = engine.get_recommendations()
+    except psycopg.Error as e:
+        return {"error": str(e)}
+    return recommendations
