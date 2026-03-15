@@ -141,25 +141,10 @@ function mapSchemaToFlow(schema, relationships = []) {
 }
 
 
-function normalizeRecommendations(payload) {
-  if (Array.isArray(payload)) {
-    return payload;
-  }
-
-  if (Array.isArray(payload?.recommendations)) {
-    return payload.recommendations;
-  }
-
-  return [];
-}
 
 function App() {
 
   const [flow, setFlow] = useState({ nodes: [], edges: [] });
-  const [recommendations, setRecommendations] = useState([]);
-  const [recommendationsLoading, setRecommendationsLoading] = useState(true);
-  const [recommendationsError, setRecommendationsError] = useState("");
-  const [recommendationsCollapsed, setRecommendationsCollapsed] = useState(false);
 
   const onNodesChange = (changes) => {
     setFlow((prev) => ({
@@ -205,31 +190,6 @@ function App() {
     loadSchema();
   }, []);
 
-  useEffect(() => {
-    loadRecommendations();
-  }, []);
-
-  async function loadRecommendations() {
-    setRecommendationsLoading(true);
-    setRecommendationsError("");
-
-    try {
-      const response = await fetch(`${API_BASE_URL}/recommendations`);
-
-      if (!response.ok) {
-        throw new Error(`API Error: ${response.status}`);
-      }
-
-      const payload = await response.json();
-      const normalized = normalizeRecommendations(payload);
-      setRecommendations(normalized);
-    } catch (error) {
-      setRecommendationsError("Failed to load recommendations.");
-      setRecommendations([]);
-    } finally {
-      setRecommendationsLoading(false);
-    }
-  }
 
   return <>
     <div className="app-shell">
@@ -250,60 +210,6 @@ function App() {
             <Controls />
           </ReactFlow>
         </div>
-        <aside className="recommendations-panel" aria-live="polite">
-          <div className="recommendations-panel__header">
-            <h2 className="recommendations-panel__title">Recommendations</h2>
-            <div className="recommendations-panel__actions">
-              <button
-                type="button"
-                className="toolbar-btn recommendations-panel__toggle"
-                onClick={() => setRecommendationsCollapsed((value) => !value)}
-                aria-expanded={!recommendationsCollapsed}
-                aria-label={recommendationsCollapsed ? "Expand recommendations" : "Collapse recommendations"}
-              >
-                {recommendationsCollapsed ? "<<" : ">>"}
-              </button>
-              <button
-                type="button"
-                className="toolbar-btn recommendations-panel__refresh"
-                onClick={loadRecommendations}
-                disabled={recommendationsLoading}
-                aria-label="Refresh recommendations"
-                title="Refresh recommendations"
-              >
-                {recommendationsLoading ? "…" : "↻"}
-              </button>
-            </div>
-          </div>
-
-          {recommendationsCollapsed ? (
-            <p className="recommendations-panel__message">Recommendations list is collapsed.</p>
-          ) : recommendationsError ? (
-            <p className="recommendations-panel__message">{recommendationsError}</p>
-          ) : recommendationsLoading ? (
-            <p className="recommendations-panel__message">Loading recommendations...</p>
-          ) : recommendations.length === 0 ? (
-            <p className="recommendations-panel__message">No recommendations available.</p>
-          ) : (
-            <ul className="recommendations-list">
-              {recommendations.map((item, index) => {
-                const key = `${item.name ?? "rec"}-${item.table_name ?? "table"}-${item.element_name ?? "element"}-${index}`;
-
-                return (
-                  <li className="recommendation-card" key={key}>
-                    <h3 className="recommendation-card__name">{item.name ?? "Recommendation"}</h3>
-                    <p className="recommendation-card__description">{item.description ?? "No description provided."}</p>
-                    <p className="recommendation-card__meta">
-                      {(item.table_name || "Unknown table")}
-                      {item.element_name ? ` · ${item.element_name}` : ""}
-                      {item.element_type ? ` (${item.element_type})` : ""}
-                    </p>
-                  </li>
-                );
-              })}
-            </ul>
-          )}
-        </aside>
       </div>
     </div>
   </>
