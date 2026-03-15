@@ -10,9 +10,8 @@ function buildColumnHandleId(columnName) {
   return `col-${value || "unknown"}`;
 }
 
-export function ErdNode({ data }) {
+export default function ErdNode({ data }) {
   const columns = data?.columns ?? [];
-
   return (
     <div className="erd-node">
       <div className="erd-node__header">{data?.title ?? "table"}</div>
