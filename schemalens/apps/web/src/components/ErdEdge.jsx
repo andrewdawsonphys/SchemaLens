@@ -2,7 +2,7 @@ import { BaseEdge, getSmoothStepPath } from "@xyflow/react";
 
 const getColor = (selected, defaultColor = "#B1B1B7") => (selected ? "#FFCC00" : defaultColor);
 
-function CrowFoot({ selected, length = 16, strokeWidth = 1.5 }) {
+function CrowFoot({ selected, length = 16, strokeWidth = 1 }) {
   const color = getColor(selected);
 
   return (
@@ -52,7 +52,7 @@ export default function ErdEdge({
   // Map relationship type to marker URLs
   const markerMap = {
     ONE_TO_MANY: ["many", "zero-or-one"],
-    ONE_TO_ONE: ["zero-or-one", "zero-or-one"],
+    ONE_TO_ONE: ["zero-or-one"],
     MANY_TO_MANY: ["many", "many"],
   };
 
