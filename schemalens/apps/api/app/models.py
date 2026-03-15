@@ -15,10 +15,11 @@ class DbSchemaTable:
 
 @dataclass
 class DbConstraint:
-    name: str
-    target_table: str
-    target_column: str
-    target_schema: str
-    source_table: str
-    source_column: str
-    source_schema: str
+    constraint_name: str
+    referencing_table_name: str
+    referencing_column_name: str
+    referencing_table_schema: str
+    referenced_table_name: str
+    referenced_column_name: str
+    referenced_table_schema: str
+    relationship_type: str

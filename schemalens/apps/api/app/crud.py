@@ -21,25 +21,36 @@ def get_db_connection():
     )
     return psycopg.connect(conninfo=dsn)
 
-def get_db_constraints() -> list[dict[str, Any]]:
+def get_db_relationships() -> list[dict[str, Any]]:
     """
-    Query the data to retrieve the foreign key constraints information
+    Query the data to retrieve the relationships information
     """
     stmt = """
-        SELECT
-            kcu.constraint_name AS name,
-            tc.table_name AS target_table,
-            tc.table_schema AS target_schema,
-            kcu.column_name AS target_column,
-            ccu.table_name AS source_table,
-            ccu.column_name AS source_column,
-            ccu.table_schema AS source_schema
-        FROM information_schema.table_constraints AS tc
-        JOIN information_schema.key_column_usage AS kcu
-        ON tc.constraint_name = kcu.constraint_name
-        JOIN information_schema.constraint_column_usage AS ccu
-        ON tc.constraint_name = ccu.constraint_name
-        WHERE tc.constraint_type = 'FOREIGN KEY';
+        SELECT  tc.constraint_name,
+                tc.table_name 		AS "referencing_table_name",
+                tc.table_schema 	AS "referencing_table_schema",
+                kcu.column_name 	AS "referencing_column_name",
+                ccu.table_name 		AS "referenced_table_name",
+                ccu.table_schema 	AS "referenced_table_schema",
+                ccu.column_name 	AS "referenced_column_name",
+                CASE 
+                    WHEN rcu."column_name" IS NOT NULL THEN 'ONE_TO_ONE'
+                    ELSE 'ONE_TO_MANY'
+                END as "relationship_type"
+        FROM information_schema.table_constraints tc
+        INNER JOIN information_schema.key_column_usage kcu 
+            ON kcu."constraint_name" = tc."constraint_name"
+        INNER JOIN information_schema.referential_constraints rc 
+            ON rc."constraint_name" = kcu."constraint_name"
+        INNER JOIN information_schema.key_column_usage ccu
+            ON ccu."constraint_name" = rc.unique_constraint_name
+        LEFT JOIN information_schema.table_constraints rtc
+        ON rtc."table_name" = kcu."table_name"
+        AND rtc."constraint_type" IN ('PRIMARY KEY','UNIQUE')
+        LEFT JOIN information_schema.key_column_usage rcu
+            ON rcu.constraint_name = rtc.constraint_name
+        AND rcu.column_name = kcu.column_name
+        WHERE tc."table_schema" = 'public' AND tc."constraint_type" = 'FOREIGN KEY';
     """
 
     with get_db_connection() as connection:
