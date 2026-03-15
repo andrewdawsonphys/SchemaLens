@@ -2,64 +2,13 @@ import { useState, useEffect } from "react";
 import { ReactFlow, Background, Controls, applyNodeChanges } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
 import { createRoot } from "react-dom/client";
-import dagre from "dagre";
 import "./styles.css";
-import { ErdNode } from "./components/ErdNode";
-import TopBar from "./components/TopBar";
+import { ErdNode } from "./components/ErdNode.jsx";
+import TopBar from "./components/TopBar.jsx";
+import { LayoutHandler } from "./layout_handler.jsx";
 
-const LAYOUT_DIRECTION = "LR";
-const DEFAULT_NODE_WIDTH = 280;
-const DEFAULT_NODE_HEIGHT = 64;
-const COLUMN_ROW_HEIGHT = 32;
 const API_BASE_URL = "http://localhost:8000/api/v1";
-
-function getNodeSize(node) {
-  const columnCount = node?.data?.columns?.length ?? 0;
-  return {
-    width: DEFAULT_NODE_WIDTH,
-    height: DEFAULT_NODE_HEIGHT + columnCount * COLUMN_ROW_HEIGHT,
-  };
-}
-
-function applyAutoLayout(nodes, edges) {
-  const graph = new dagre.graphlib.Graph();
-  graph.setDefaultEdgeLabel(() => ({}));
-  graph.setGraph({
-    rankdir: LAYOUT_DIRECTION,
-    nodesep: 40,
-    ranksep: 140,
-    marginx: 24,
-    marginy: 24,
-  });
-
-  nodes.forEach((node) => {
-    const { width, height } = getNodeSize(node);
-    graph.setNode(node.id, { width, height });
-  });
-
-  edges.forEach((edge) => {
-    graph.setEdge(edge.source, edge.target);
-  });
-
-  dagre.layout(graph);
-
-  return nodes.map((node) => {
-    const { width, height } = getNodeSize(node);
-    const layoutNode = graph.node(node.id);
-
-    if (!layoutNode) {
-      return node;
-    }
-
-    return {
-      ...node,
-      position: {
-        x: layoutNode.x - width / 2,
-        y: layoutNode.y - height / 2,
-      },
-    };
-  });
-}
+const layoutHandler = new LayoutHandler();
 
 function buildColumnHandleId(columnName) {
   const value = String(columnName ?? "")
@@ -124,7 +73,7 @@ function mapSchemaToFlow(schema, constraints = []) {
     })
     .filter(Boolean);
 
-  return { nodes: applyAutoLayout(nodes, edges), edges };
+  return { nodes: layoutHandler.applyAutoLayout(nodes, edges), edges };
 }
 
 const nodeTypes = {
