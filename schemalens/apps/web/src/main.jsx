@@ -1,14 +1,74 @@
+import '@xyflow/react/dist/style.css';
+import "./styles.css";
+import dagre from "dagre";
 import { useState, useEffect } from "react";
 import { ReactFlow, Background, Controls, applyNodeChanges } from '@xyflow/react';
-import '@xyflow/react/dist/style.css';
 import { createRoot } from "react-dom/client";
 import "./styles.css";
-import { ErdNode } from "./components/ErdNode.jsx";
+import ErdNode from "./components/ErdNode.jsx";
+import ErdEdge from "./components/ErdEdge";
 import TopBar from "./components/TopBar.jsx";
 import { LayoutHandler } from "./layout_handler.jsx";
 
 const API_BASE_URL = "http://localhost:8000/api/v1";
 const layoutHandler = new LayoutHandler();
+
+const nodeTypes = {
+  erdNode: ErdNode,
+};
+
+const edgeTypes = {
+  erdEdge: ErdEdge,
+};
+
+
+function getNodeSize(node) {
+  const columnCount = node?.data?.columns?.length ?? 0;
+  return {
+    width: DEFAULT_NODE_WIDTH,
+    height: DEFAULT_NODE_HEIGHT + columnCount * COLUMN_ROW_HEIGHT,
+  };
+}
+
+function applyAutoLayout(nodes, edges) {
+  const graph = new dagre.graphlib.Graph();
+  graph.setDefaultEdgeLabel(() => ({}));
+  graph.setGraph({
+    rankdir: LAYOUT_DIRECTION,
+    nodesep: 40,
+    ranksep: 140,
+    marginx: 24,
+    marginy: 24,
+  });
+
+  nodes.forEach((node) => {
+    const { width, height } = getNodeSize(node);
+    graph.setNode(node.id, { width, height });
+  });
+
+  edges.forEach((edge) => {
+    graph.setEdge(edge.source, edge.target);
+  });
+
+  dagre.layout(graph);
+
+  return nodes.map((node) => {
+    const { width, height } = getNodeSize(node);
+    const layoutNode = graph.node(node.id);
+
+    if (!layoutNode) {
+      return node;
+    }
+
+    return {
+      ...node,
+      position: {
+        x: layoutNode.x - width / 2,
+        y: layoutNode.y - height / 2,
+      },
+    };
+  });
+}
 
 function buildColumnHandleId(columnName) {
   const value = String(columnName ?? "")
@@ -20,7 +80,7 @@ function buildColumnHandleId(columnName) {
   return `col-${value || "unknown"}`;
 }
 
-function mapSchemaToFlow(schema, constraints = []) {
+function mapSchemaToFlow(schema, relationships = []) {
 
   const tables = Array.isArray(schema) ? schema : schema.tables;
 
@@ -45,30 +105,34 @@ function mapSchemaToFlow(schema, constraints = []) {
     };
   });
 
-  const constraintRows = Array.isArray(constraints)
-    ? constraints
-    : (constraints?.constraints ?? constraints?.data?.constraints ?? []);
+  const relationshipRows = Array.isArray(relationships)
+    ? relationships
+    : (relationships?.relationships ?? relationships?.data?.relationships ?? []);
 
-  const edges = constraintRows
+  const edges = relationshipRows
     .map((row) => {
 
-      const source = `${row.source_schema}.${row.source_table}`.toLowerCase();
-      const target = `${row.target_schema}.${row.target_table}`.toLowerCase();
+      const referencing_id = `${row.referencing_table_schema}.${row.referencing_table_name}`.toLowerCase();
+      const referenced_id = `${row.referenced_table_schema}.${row.referenced_table_name}`.toLowerCase();
 
-      const constraintName = row.name;
-      const sourceHandle = buildColumnHandleId(row.source_column);
-      const targetHandle = buildColumnHandleId(row.target_column)
+      const constraint_name = row.constraint_name;
+      const referencing_column_name = buildColumnHandleId(row.referencing_column_name);
+      const referenced_column_name = buildColumnHandleId(row.referenced_column_name);
+      const relationship_type = row.relationship_type;
 
-      const id = `edge-${row.source_schema}.${row.target_schema}.${row.source_table}.${row.target_table}`
+      const id = `edge-${row.referencing_table_schema}.${row.referenced_table_schema}.${row.referencing_table_name}.${row.referenced_table_name}`
 
       return {
         id: id,
-        source,
-        target,
-        sourceHandle,
-        targetHandle,
-        label: constraintName,
-        type: "smoothstep",
+        source: referencing_id,
+        target: referenced_id,
+        sourceHandle: referencing_column_name,
+        targetHandle: referenced_column_name,
+        type: "erdEdge",
+        data: {
+          constraintName: constraint_name,
+          relationshipType: relationship_type,
+        },
       };
     })
     .filter(Boolean);
@@ -76,9 +140,6 @@ function mapSchemaToFlow(schema, constraints = []) {
   return { nodes: layoutHandler.applyAutoLayout(nodes, edges), edges };
 }
 
-const nodeTypes = {
-  erdNode: ErdNode,
-};
 
 function normalizeRecommendations(payload) {
   if (Array.isArray(payload)) {
@@ -117,30 +178,30 @@ function App() {
 
         const schemaData = await schemaResponse.json();
 
-        let constraintsData = [];
+        let relationshipsData = [];
 
         try {
-          const constraintsResponse = await fetch(`${API_BASE_URL}/constraints`);
-          if (constraintsResponse.ok) {
-            const parsed = await constraintsResponse.json();
+          const relationshipsResponse = await fetch(`${API_BASE_URL}/relationships`);
+          if (relationshipsResponse.ok) {
+            const parsed = await relationshipsResponse.json();
 
             if (!parsed?.message) {
-              constraintsData = parsed;
+              relationshipsData = parsed;
             }
           }
         } catch (error) {
-          console.warn("Constraints endpoint unavailable, continuing without edges", error);
+          console.warn("Relationships endpoint unavailable, continuing without edges", error);
         }
 
-        const mapped = mapSchemaToFlow(schemaData, constraintsData);
+        const mapped = mapSchemaToFlow(schemaData, relationshipsData);
+        console.log("Loaded relationships:", relationshipsData);
+        console.log("Mapped flow:", mapped);
         setFlow(mapped);
       } catch (error) {
         console.error("Failed to load schema", error);
       }
 
     }
-
-
     loadSchema();
   }, []);
 
@@ -177,6 +238,7 @@ function App() {
         <div className="graph-container">
           <ReactFlow
             nodeTypes={nodeTypes}
+            edgeTypes={edgeTypes}
             nodes={flow.nodes}
             edges={flow.edges}
             onNodesChange={onNodesChange}

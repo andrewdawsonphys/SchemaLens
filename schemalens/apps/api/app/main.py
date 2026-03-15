@@ -1,7 +1,7 @@
 import psycopg
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from .crud import get_db_schema, get_db_constraints
+from .crud import get_db_schema, get_db_relationships
 from .recommendation_engine import RecommendationEngine
 
 app = FastAPI(title="SchemaLens API", version="0.1.0")
@@ -37,7 +37,7 @@ def get_schema():
     return schema
 
 
-@app.get("/api/v1/constraints")
+@app.get("/api/v1/relationships")
 def get_constraints():
     """
     Endpoint to retrieve the database constraints information, including tables,
@@ -45,10 +45,10 @@ def get_constraints():
     """
 
     try:
-        constraints = get_db_constraints()
+        relationships = get_db_relationships()
     except psycopg.Error as e:
         return {"error": str(e)}
-    return constraints
+    return relationships
 
 @app.get("/api/v1/recommendations")
 def get_recommendations():
