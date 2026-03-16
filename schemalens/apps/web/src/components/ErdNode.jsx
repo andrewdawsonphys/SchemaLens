@@ -22,14 +22,15 @@ export default function ErdNode({ data }) {
           key={`${data?.nodeId ?? data?.title ?? "table"}:${column.name ?? "col"}:${column.ordinalPosition ?? index}`}
           className="erd-node__column"
         >
+          <span className="erd-node__column-key">{column.is_primary_key ? '🔑' : ''}</span>
+          <span className="erd-node__column-name">{column.name}</span>
+          <span className="erd-node__column-type">{column.type} {column.is_primary_key ? "(PK)" : ""}</span>
           <Handle
             type="target"
             position={Position.Left}
             id={buildColumnHandleId(column.name)}
             className="erd-node__handle erd-node__handle--left"
           />
-          <span className="erd-node__column-name">{column.name}</span>
-          <span className="erd-node__column-type">{column.type}</span>
           <Handle
             type="source"
             position={Position.Right}
