@@ -60,7 +60,6 @@ def get_db_relationships() -> list[dict[str, Any]]:
 
     return [asdict(DbConstraint(**row)) for row in rows]
 
-
 def get_db_schema() -> list[dict[str, Any]]:
     """
     Query the database to retrieve the schema information, including tables,
@@ -91,16 +90,17 @@ def get_db_schema() -> list[dict[str, Any]]:
             cur.execute(stmt)
             rows = cur.fetchall()
 
-    tables: dict[str, DbSchemaTable] = {}
+    tables: dict[str, list[DbSchemaTable]] = {}
 
     for row in rows:
         table_name = row["table_name"]
         table_schema = row["table_schema"]
-        if table_name not in tables:
-            tables[table_name] = DbSchemaTable(table_name=table_name, table_schema=table_schema, columns=[])
+        tables.setdefault(
+            table_name, DbSchemaTable(table_name=table_name, table_schema=table_schema, columns=[])
+        )
 
         if row["column_name"] is not None:
-            tables[table_name].columns.append(
+                tables[table_name].columns.append(
                 DbSchemaColumn(
                     column_name=row["column_name"],
                     formatted_type=row["formatted_type"],
@@ -108,4 +108,4 @@ def get_db_schema() -> list[dict[str, Any]]:
                 )
             )
 
-    return [asdict(table) for table in tables.values()]
+    return tables.values()
