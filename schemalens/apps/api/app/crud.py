@@ -71,6 +71,7 @@ def get_db_schema() -> list[dict[str, Any]]:
             t.table_name,
             t.table_schema,
             c.column_name,
+            tc.constraint_type,
             CASE 
                 WHEN c.data_type IN ('character varying', 'varchar', 'character', 'char')
                     THEN CONCAT(c.data_type, '(', c.character_maximum_length, ')')
@@ -82,21 +83,40 @@ def get_db_schema() -> list[dict[str, Any]]:
             CASE 
                 WHEN pk.column_name IS NOT NULL THEN true
                 ELSE false
-            END AS is_primary_key
-        FROM information_schema.tables t
-        LEFT JOIN information_schema.columns c
+            END AS is_primary_key,
+            CASE 
+                WHEN fk.column_name IS NOT NULL THEN true
+                ELSE false
+            END AS is_foreign_key
+        FROM
+            information_schema.tables t
+        LEFT JOIN
+            information_schema.columns c
             ON c.table_name = t.table_name
             AND c.table_schema = t.table_schema
-        LEFT JOIN information_schema.table_constraints tc
+        LEFT JOIN
+            information_schema.table_constraints tc
             ON tc.table_name = t.table_name
             AND tc.table_schema = t.table_schema
             AND tc.constraint_type = 'PRIMARY KEY'
-        LEFT JOIN information_schema.key_column_usage pk
+        LEFT JOIN
+            information_schema.key_column_usage pk
             ON pk.table_name = t.table_name
             AND pk.table_schema = t.table_schema
             AND pk.column_name = c.column_name
             AND pk.constraint_name = tc.constraint_name
-        WHERE t.table_schema = 'public'
+        LEFT JOIN
+            information_schema.key_column_usage fk
+            ON fk.table_name = t.table_name
+            AND fk.table_schema = t.table_schema
+            AND fk.column_name = c.column_name
+            AND fk.constraint_name IN (
+                SELECT rc.constraint_name
+                FROM information_schema.referential_constraints rc
+                WHERE rc.constraint_schema = t.table_schema
+            )
+        WHERE
+            t.table_schema = 'public'
         ORDER BY
             t.table_name,
             c.ordinal_position;
@@ -116,12 +136,13 @@ def get_db_schema() -> list[dict[str, Any]]:
         )
 
         if row["column_name"] is not None:
-                tables[table_name].columns.append(
+            tables[table_name].columns.append(
                 DbSchemaColumn(
                     column_name=row["column_name"],
                     formatted_type=row["formatted_type"],
                     is_nullable=row["is_nullable"],
-                    is_primary_key=row["is_primary_key"]
+                    is_primary_key=row["is_primary_key"],
+                    is_foreign_key=row["is_foreign_key"]
                 )
             )
 

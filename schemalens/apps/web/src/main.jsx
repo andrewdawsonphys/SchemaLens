@@ -100,7 +100,8 @@ function mapSchemaToFlow(schema, relationships = []) {
           name: col.column_name,
           type: col.formatted_type,
           ordinalPosition: col.ordinal_position,
-          is_primary_key: col.is_primary_key
+          is_primary_key: col.is_primary_key,
+          is_foreign_key: col.is_foreign_key
         })),
       },
     };
