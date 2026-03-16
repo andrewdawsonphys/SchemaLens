@@ -1,3 +1,5 @@
+from dataclasses import asdict
+
 import psycopg
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
@@ -34,7 +36,7 @@ def get_schema():
         schema = get_db_schema()
     except psycopg.Error as e:
         return {"error": str(e)}
-    return schema
+    return [asdict(table) for table in schema]
 
 
 @app.get("/api/v1/relationships")

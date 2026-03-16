@@ -6,6 +6,7 @@ class DbSchemaColumn:
     column_name: Optional[str]
     formatted_type: Optional[str]
     is_nullable: Optional[str]
+    is_primary_key: Optional[bool]
 
 @dataclass
 class DbSchemaTable:

@@ -3,6 +3,7 @@ from collections import Counter
 from dataclasses import dataclass
 from abc import ABC, abstractmethod
 from ..crud import get_db_schema
+from ..models import DbSchemaTable
 
 @dataclass
 class Recommendation:
@@ -23,12 +24,11 @@ class RecommendationRule(ABC):
         """Apply the rule to the given data and return a list of recommendations"""
         raise NotImplementedError
 
-
 class InconsistentNamingConvention(RecommendationRule):
 
     NAME = "Inconsistent Naming Convention"
 
-    def check(self, data) -> list[Recommendation]:
+    def check(self, data: list[DbSchemaTable]) -> list[Recommendation]:
 
         convention_counter = Counter({"camel_case": 0, "snake_case": 0, "pascal_case": 0})
 
@@ -40,8 +40,8 @@ class InconsistentNamingConvention(RecommendationRule):
 
         # (1) Find which naming convention is the most common in the database schema
         for table_schema in data:
-            table_name = table_schema["table_name"]
-            column_names = [name["column_name"] for name in table_schema["columns"]]
+            table_name = table_schema.table_name
+            column_names = [column.column_name for column in table_schema.columns]
 
             for name in [table_name, *column_names]:
                 for convention_key, pattern in convention_patterns.items():
@@ -55,10 +55,9 @@ class InconsistentNamingConvention(RecommendationRule):
         # most common naming convention and generate a recommendation for each of them
         target_pattern = convention_patterns[most_common_convention]
         recommendations = []
-        import json
-        print(json.dumps(data, indent=2))
+
         for table_schema in data:
-            table_name = table_schema["table_name"]
+            table_name = table_schema.table_name
             # check table name
             if not re.match(target_pattern, table_name):
 
@@ -71,10 +70,10 @@ class InconsistentNamingConvention(RecommendationRule):
                         table_name=table_name
                     )
                 )
-            
+
             # check column names
-            for column in table_schema["columns"]:
-                column_name = column["column_name"]
+            for column in table_schema.columns:
+                column_name = column.column_name
                 if not re.match(target_pattern, column_name):
                     recommendations.append(
                         Recommendation(
@@ -88,19 +87,38 @@ class InconsistentNamingConvention(RecommendationRule):
 
         return recommendations
 
+class MissingPrimaryKey(RecommendationRule):
+
+    NAME = "Missing Primary Key"
+
+    def check(self, data: list[DbSchemaTable]) -> list[Recommendation]:
+        recommendations: list[Recommendation] = []
+
+        for table_schema in data:
+            if not any(column.is_primary_key for column in table_schema.columns):
+                recommendations.append(
+                    Recommendation(
+                        name=self.NAME,
+                        description="Table is missing a primary key",
+                        element_type="table",
+                        element_name=None,
+                        table_name=table_schema.table_name
+                    )
+                )
+
+        return recommendations
 
 class RecommendationEngine:
 
     def __init__(self):
-        self.default_rules = [InconsistentNamingConvention]
-        self.rules = [InconsistentNamingConvention]
+        self.default_rules = [MissingPrimaryKey, InconsistentNamingConvention]
 
     def get_recommendations(self) -> list[Recommendation]:
         """Generate a recommendation based on the database schema and constraints information"""
         recommendations: list[Recommendation] = []
         schema = get_db_schema()
 
-        for rule in self.rules:
+        for rule in self.default_rules:
             recommendations.extend(rule().check(schema))
 
         return recommendations
