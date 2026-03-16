@@ -99,7 +99,8 @@ function mapSchemaToFlow(schema, relationships = []) {
         columns: (table.columns ?? []).map((col) => ({
           name: col.column_name,
           type: col.formatted_type,
-          ordinalPosition: col.ordinal_position
+          ordinalPosition: col.ordinal_position,
+          is_primary_key: col.is_primary_key
         })),
       },
     };
