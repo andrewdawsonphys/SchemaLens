@@ -24,9 +24,7 @@ function App() {
     }));
   };
 
-
   useEffect(() => {load_schema(setFlow);}, []);
-
 
   return <>
     <div className="app-shell">

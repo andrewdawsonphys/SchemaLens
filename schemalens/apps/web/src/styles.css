@@ -215,7 +215,6 @@ p {
 .erd-node:hover {
   border-color: var(--handle-border);
   box-shadow: var(--shadow-hover);
-  transform: translateY(-1px);
 }
 
 .erd-node:active {
@@ -229,6 +228,28 @@ p {
   color: var(--text);
   background: var(--surface-strong);
   text-transform: lowercase;
+  display: flex;
+  justify-content: space-between;
+}
+
+.erd-node__header__recommendation_count {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.erd-node__header__recommendation_count_item {
+  min-width: 20px;
+  height: 20px;
+  padding: 0 6px;
+  font-size: 12px;
+  font-weight: 700;
+  border-radius: 8px;
+  border: 1px solid var(--status-checking);
+  color:  var(--text);
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .erd-node__body {

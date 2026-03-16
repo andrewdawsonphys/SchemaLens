@@ -6,7 +6,13 @@ export default function ErdNode({ data }) {
   const columns = data?.columns ?? [];
   return (
     <div className="erd-node">
-      <div className="erd-node__header">{data?.title ?? "table"}</div>
+      <div className="erd-node__header"> 
+        <div>{data?.title ?? "table"}</div>
+        <div className="erd-node__header__recommendation_count">
+          <div className="erd-node__header__recommendation_count_item">{"1 ⚠️"}</div>
+          <div className="erd-node__header__recommendation_count_item">{"3 💡"}</div>
+        </div>
+      </div>
 
     <div className="erd-node__body">
       {columns.map((column, index) => (
