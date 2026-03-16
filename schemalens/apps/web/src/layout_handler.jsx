@@ -5,7 +5,7 @@ export class LayoutHandler {
     constructor() {
         this.nodes = [];
         this.edges = [];
-        this.LAYOUT_DIRECTION = "TB";
+        this.LAYOUT_DIRECTION = "LR";
         this.NODE_WIDTH = 280;
         this.NODE_HEIGHT = 64;
         this.COLUMN_ROW_HEIGHT = 32;
