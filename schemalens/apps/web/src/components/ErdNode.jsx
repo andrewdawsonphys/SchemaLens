@@ -1,14 +1,6 @@
 import { Handle, Position } from '@xyflow/react';
+import { build_column_handle_id } from '../schema_utils';
 
-function buildColumnHandleId(columnName) {
-  const value = String(columnName ?? "")
-    .trim()
-    .toLowerCase()
-    .replace(/\s+/g, "_")
-    .replace(/[^a-z0-9_]/g, "");
-
-  return `col-${value || "unknown"}`;
-}
 
 export default function ErdNode({ data }) {
   const columns = data?.columns ?? [];
@@ -33,13 +25,13 @@ export default function ErdNode({ data }) {
           <Handle
             type="target"
             position={Position.Left}
-            id={buildColumnHandleId(column.name)}
+            id={build_column_handle_id(column.name)}
             className="erd-node__handle erd-node__handle--left"
           />
           <Handle
             type="source"
             position={Position.Right}
-            id={buildColumnHandleId(column.name)}
+            id={build_column_handle_id(column.name)}
             className="erd-node__handle erd-node__handle--right"
           />
         </div>

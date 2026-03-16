@@ -2,14 +2,7 @@ import { useState, useEffect } from "react";
 
 export default function TopBar() {
 
-  const [apiStatus, setApiStatus] = useState("checking");
   const [theme, setTheme] = useState("light");
-
-  const statusLabel = apiStatus === "healthy"
-    ? "API healthy"
-    : apiStatus === "unhealthy"
-      ? "API unavailable"
-      : "Checking API";
 
   useEffect(() => {
     const savedTheme = localStorage.getItem("schemalens-theme");
@@ -27,40 +20,6 @@ export default function TopBar() {
     document.documentElement.setAttribute("data-theme", theme);
     localStorage.setItem("schemalens-theme", theme);
   }, [theme]);
-
-  useEffect(() => {
-    let active = true;
-
-    async function checkHealth() {
-      try {
-        let response = await fetch("http://localhost:8000/health");
-
-        if (!response.ok) {
-          response = await fetch("http://localhost:8000/api/v1");
-        }
-
-        if (!response.ok) {
-          throw new Error(`Health API Error: ${response.status}`);
-        }
-
-        if (active) {
-          setApiStatus("healthy");
-        }
-      } catch (error) {
-        if (active) {
-          setApiStatus("unhealthy");
-        }
-      }
-    }
-
-    checkHealth();
-    const intervalId = setInterval(checkHealth, 60_000);
-
-    return () => {
-      active = false;
-      clearInterval(intervalId);
-    };
-  }, []);
 
   const nextTheme = theme === "dark" ? "light" : "dark";
 
@@ -82,10 +41,6 @@ export default function TopBar() {
           <span className="theme-toggle-icon theme-toggle-icon--moon" aria-hidden="true">🌙</span>
           <span className="theme-toggle-thumb" aria-hidden="true" />
         </button>
-        <div className="app-status" aria-live="polite">
-          <span className={`status-dot status-dot--${apiStatus}`} aria-hidden="true" />
-          <span className="status-text">{statusLabel}</span>
-        </div>
       </div>
     </header>
   </>
