@@ -67,23 +67,39 @@ def get_db_schema() -> list[dict[str, Any]]:
     """
     # we need to query the information_schema to get list of tables and columns
     stmt = """
-        SELECT  t.table_name,
-                t.table_schema,
-                c.column_name,
-                CASE 
-                    WHEN c.data_type IN ('character varying', 'varchar', 'character', 'char')
-                        THEN CONCAT(c.data_type, '(', c.character_maximum_length, ')')
-                    WHEN c.numeric_precision IS NOT NULL
-                        THEN CONCAT(c.data_type, '(', c.numeric_precision, ')')
-                    ELSE c.data_type
-                END AS formatted_type,
-                c.is_nullable
-        FROM information_schema."tables" t
-        LEFT JOIN information_schema."columns" c
-        ON c."table_name" = t."table_name"
-        AND c."table_schema" = t."table_schema"
-        WHERE t.table_schema='public'
-        ORDER BY t."table_name", c.ordinal_position;
+        SELECT
+            t.table_name,
+            t.table_schema,
+            c.column_name,
+            CASE 
+                WHEN c.data_type IN ('character varying', 'varchar', 'character', 'char')
+                    THEN CONCAT(c.data_type, '(', c.character_maximum_length, ')')
+                WHEN c.numeric_precision IS NOT NULL
+                    THEN CONCAT(c.data_type, '(', c.numeric_precision, ')')
+                ELSE c.data_type
+            END AS formatted_type,
+            c.is_nullable,
+            CASE 
+                WHEN pk.column_name IS NOT NULL THEN true
+                ELSE false
+            END AS is_primary_key
+        FROM information_schema.tables t
+        LEFT JOIN information_schema.columns c
+            ON c.table_name = t.table_name
+            AND c.table_schema = t.table_schema
+        LEFT JOIN information_schema.table_constraints tc
+            ON tc.table_name = t.table_name
+            AND tc.table_schema = t.table_schema
+            AND tc.constraint_type = 'PRIMARY KEY'
+        LEFT JOIN information_schema.key_column_usage pk
+            ON pk.table_name = t.table_name
+            AND pk.table_schema = t.table_schema
+            AND pk.column_name = c.column_name
+            AND pk.constraint_name = tc.constraint_name
+        WHERE t.table_schema = 'public'
+        ORDER BY
+            t.table_name,
+            c.ordinal_position;
 """
     with get_db_connection() as connection:
         with connection.cursor(row_factory=dict_row) as cur:
@@ -105,6 +121,7 @@ def get_db_schema() -> list[dict[str, Any]]:
                     column_name=row["column_name"],
                     formatted_type=row["formatted_type"],
                     is_nullable=row["is_nullable"],
+                    is_primary_key=row["is_primary_key"]
                 )
             )
 

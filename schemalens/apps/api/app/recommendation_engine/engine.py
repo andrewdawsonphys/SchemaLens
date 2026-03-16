@@ -91,13 +91,22 @@ class MissingPrimaryKey(RecommendationRule):
 
     NAME = "Missing Primary Key"
 
-    def check(self, data):
+    def check(self, data: list[DbSchemaTable]) -> list[Recommendation]:
         recommendations: list[Recommendation] = []
-        print(data)
+
+        for table_schema in data:
+            if not any(column.is_primary_key for column in table_schema.columns):
+                recommendations.append(
+                    Recommendation(
+                        name=self.NAME,
+                        description="Table is missing a primary key",
+                        element_type="table",
+                        element_name=None,
+                        table_name=table_schema.table_name
+                    )
+                )
 
         return recommendations
-
-
 
 class RecommendationEngine:
 
