@@ -5,9 +5,9 @@
 
 SchemaLens is a lightweight toolkit for exploring, visualizing, and understanding data schemas.
 
-## ✨ Features
+## Features
 
-### 🔍 Smart Search & Navigation
+### Smart Search & Navigation
 ![Search Demo](./images/search-bar-feature.gif)
 
 Quick table discovery with autocomplete suggestions and smooth navigation to any table in your schema.
