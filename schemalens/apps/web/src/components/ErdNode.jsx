@@ -4,8 +4,10 @@ import { build_column_handle_id } from '../schema_utils';
 
 export default function ErdNode({ data }) {
   const columns = data?.columns ?? [];
+  const isHighlighted = data?.isHighlighted || false;
+  
   return (
-    <div className="erd-node">
+    <div className={`erd-node${isHighlighted ? ' erd-node--highlighted' : ''}`}>
       <div className="erd-node__header"> 
         <div>{data?.title ?? "table"}</div>
         <div className="erd-node__header__recommendation_count">
