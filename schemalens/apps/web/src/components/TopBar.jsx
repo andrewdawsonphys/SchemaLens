@@ -75,15 +75,21 @@ export default function TopBar({ onSearchSubmit, onSearchChange, tables = [] }) 
     switch (event.key) {
       case 'ArrowDown':
         event.preventDefault();
-        setSelectedIndex((prev) => 
-          prev < filteredTables.length - 1 ? prev + 1 : 0
-        );
+        const nextIndex = selectedIndex < filteredTables.length - 1 ? selectedIndex + 1 : 0;
+        setSelectedIndex(nextIndex);
+        // Update search input with selected item
+        const nextTable = filteredTables[nextIndex];
+        const nextTableName = nextTable?.data?.title || nextTable?.title || '';
+        setQuery(nextTableName);
         break;
       case 'ArrowUp':
         event.preventDefault();
-        setSelectedIndex((prev) => 
-          prev > 0 ? prev - 1 : filteredTables.length - 1
-        );
+        const prevIndex = selectedIndex > 0 ? selectedIndex - 1 : filteredTables.length - 1;
+        setSelectedIndex(prevIndex);
+        // Update search input with selected item
+        const prevTable = filteredTables[prevIndex];
+        const prevTableName = prevTable?.data?.title || prevTable?.title || '';
+        setQuery(prevTableName);
         break;
       case 'Enter':
         event.preventDefault();
