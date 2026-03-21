@@ -68,6 +68,32 @@ export default function SchemaExplorer() {
     }
   };
 
+  // Handle view table navigation from recommendations
+  const handleViewTable = (schema, tableName) => {
+    // Try multiple possible node ID formats since schema may be omitted
+    const candidates = [
+      `${schema}.${tableName}`,
+      `public.${tableName}`,
+      tableName,
+    ];
+
+    let targetNode = null;
+    for (const id of candidates) {
+      targetNode = findNode(id);
+      if (targetNode) break;
+    }
+
+    if (targetNode) {
+      highlightNode(targetNode.id, 2500);
+      setCenter(targetNode.position.x + 180, targetNode.position.y + 110, {
+        zoom: 1.2,
+        duration: 800,
+      });
+    } else {
+      console.warn(`Table ${schema}.${tableName} not found in ERD`);
+    }
+  };
+
   // Search functionality
   const tableSearch = useTableSearch({
     nodes: flow.nodes,
@@ -125,7 +151,9 @@ export default function SchemaExplorer() {
           tableSchema={sidebarState.tableSchema}
           tableName={sidebarState.tableName}
           selectedType={sidebarState.selectedType}
+          viewMode={sidebarState.viewMode}
           onClose={sidebarState.closeSidebar}
+          onViewTable={handleViewTable}
         />
       </div>
     </>
