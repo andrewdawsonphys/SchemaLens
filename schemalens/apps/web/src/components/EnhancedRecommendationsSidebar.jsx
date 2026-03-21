@@ -1,6 +1,7 @@
 import { useState, useMemo, useRef, useEffect } from 'react';
 import { LoadingSpinner } from './ui/LoadingSpinner.jsx';
 import { InlineError } from './ui/ErrorMessage.jsx';
+import { useSidebarResize } from '../hooks/useSidebarResize.js';
 import { 
   buildRecommendationCounts, 
   filterRecommendationsByType,
@@ -11,21 +12,18 @@ import {
 const RECOMMENDATION_TYPES = {
   error: {
     label: 'Errors', 
-    icon: '⚠️', 
     color: 'text-red-600 dark:text-red-400',
     bgColor: 'bg-red-50 dark:bg-red-900/20',
     borderColor: 'border-red-200 dark:border-red-700'
   },
   warning: { 
     label: 'Warnings', 
-    icon: '⚡', 
     color: 'text-yellow-600 dark:text-yellow-400',
     bgColor: 'bg-yellow-50 dark:bg-yellow-900/20',
     borderColor: 'border-yellow-200 dark:border-yellow-700'
   },
   info: { 
     label: 'Info', 
-    icon: 'ℹ️', 
     color: 'text-blue-600 dark:text-blue-400',
     bgColor: 'bg-blue-50 dark:bg-blue-900/20',
     borderColor: 'border-blue-200 dark:border-blue-700'
@@ -48,11 +46,7 @@ function RecommendationsStats({ items, selectedFilter, onFilterChange }) {
 
   return (
     <div className="recommendations-stats">
-      <div className="recommendations-stats__summary">
-        <h3 className="recommendations-stats__total">
-          {total} {total === 1 ? 'Recommendation' : 'Recommendations'}
-        </h3>
-      </div>
+
       
       <div className="recommendations-stats__filters">
         <button
@@ -72,7 +66,6 @@ function RecommendationsStats({ items, selectedFilter, onFilterChange }) {
                 selectedFilter === type ? 'active' : ''
               }`}
             >
-              <span className="recommendations-stats__filter-icon">{config.icon}</span>
               {config.label} ({count})
             </button>
           );
@@ -190,7 +183,7 @@ function RecommendationsControls({
 /**
  * Enhanced recommendation card with expand/collapse and table info for all-recommendations view
  */
-function RecommendationCard({ recommendation, index, isExpanded, onToggle, onDismiss, viewMode = 'table' }) {
+function RecommendationCard({ recommendation, index, isExpanded, onToggle, onDismiss, onViewTable, viewMode = 'table' }) {
   const config = RECOMMENDATION_TYPES[recommendation.type] || RECOMMENDATION_TYPES.warning;
   const cardRef = useRef(null);
 
@@ -223,28 +216,43 @@ function RecommendationCard({ recommendation, index, isExpanded, onToggle, onDis
       >
         <div className="recommendation-card__meta">
           <span className={`recommendation-card__badge ${config.bgColor} ${config.color} ${config.borderColor}`}>
-            <span className="recommendation-card__badge-icon">{config.icon}</span>
             {recommendation.type.toUpperCase()}
           </span>
-          <div className="recommendation-card__title-section">
+          
+          <div className="recommendation-card__context">
             <span className="recommendation-card__rule">{recommendation.name}</span>
-            {/* Show table info when viewing all recommendations */}
-            {viewMode === 'all' && (
-              <div className="recommendation-card__table-info">
-                <span className="recommendation-card__table-name">
-                  {recommendation.table_schema || 'public'}.{recommendation.table_name}
+            <span className="recommendation-card__table-context">
+              {(recommendation.table_schema && recommendation.table_schema !== 'public') && (
+                <>
+                  {recommendation.table_schema}.
+                </>
+              )}
+              {recommendation.table_name}
+              {recommendation.element_name && (
+                <span className="recommendation-card__column-context">
+                  .{recommendation.element_name}
                 </span>
-                {recommendation.element_name && (
-                  <span className="recommendation-card__column-name">
-                    • {recommendation.element_name}
-                  </span>
-                )}
-              </div>
-            )}
+              )}
+            </span>
           </div>
         </div>
         
         <div className="recommendation-card__actions">
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              onViewTable?.(recommendation.table_schema || 'public', recommendation.table_name);
+            }}
+            className="recommendation-card__view-table"
+            aria-label="View table in diagram"
+            title="Navigate to this table in the ERD"
+          >
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+              <circle cx="12" cy="12" r="3"/>
+            </svg>
+          </button>
+          
           <button
             onClick={(e) => {
               e.stopPropagation();
@@ -371,6 +379,23 @@ function EmptyState({ hasFilters, selectedFilter, searchQuery }) {
 }
 
 /**
+ * Resize handle component for sidebar
+ */
+function ResizeHandle({ onMouseDown, isResizing }) {
+  return (
+    <div 
+      className={`sidebar-resize-handle ${isResizing ? 'sidebar-resize-handle--active' : ''}`}
+      onMouseDown={onMouseDown}
+      role="separator"
+      aria-label="Resize sidebar"
+      title="Drag to resize sidebar"
+    >
+      <div className="sidebar-resize-handle__grip" />
+    </div>
+  );
+}
+
+/**
  * Main enhanced recommendations sidebar component
  */
 export default function EnhancedRecommendationsSidebar({
@@ -383,6 +408,7 @@ export default function EnhancedRecommendationsSidebar({
   selectedType,
   viewMode = 'table',
   onClose,
+  onViewTable,
 }) {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedFilter, setSelectedFilter] = useState(selectedType || '');
@@ -391,6 +417,9 @@ export default function EnhancedRecommendationsSidebar({
   const [sortBy, setSortBy] = useState('priority');
   const [expandedCards, setExpandedCards] = useState(new Set());
   const [dismissedItems, setDismissedItems] = useState(new Set());
+  
+  // Resize functionality
+  const { width, isResizing, handleMouseDown } = useSidebarResize();
 
   // Update filter when selectedType prop changes
   useEffect(() => {
@@ -504,30 +533,25 @@ export default function EnhancedRecommendationsSidebar({
     return null;
   }
 
-  const title = viewMode === 'all' 
-    ? (selectedFilter
-        ? `${RECOMMENDATION_TYPES[selectedFilter]?.label || selectedFilter} - All Tables`
-        : 'All Schema Recommendations'
-      )
-    : (selectedFilter
-        ? `${RECOMMENDATION_TYPES[selectedFilter]?.label || selectedFilter} Recommendations`
-        : 'Recommendations'
-      );
 
   const subtitle = viewMode === 'all' 
     ? 'Database-wide recommendations'
     : `${tableSchema}.${tableName}`;
 
   return (
-    <aside className="recommendations-sidebar enhanced" aria-label="Recommendations panel">
+    <aside 
+      className="recommendations-sidebar enhanced" 
+      style={{ width: `${width}px` }}
+      aria-label="Recommendations panel"
+    >
+      <ResizeHandle 
+        onMouseDown={handleMouseDown}
+        isResizing={isResizing}
+      />
+      
       <div className="recommendations-sidebar__header">
         <div className="recommendations-sidebar__title-section">
-          <h2 className="recommendations-sidebar__title">{title}</h2>
-          <div className="recommendations-sidebar__subtitle">
-            <span className={viewMode === 'all' ? 'all-tables-identifier' : 'table-identifier'}>
-              {subtitle}
-            </span>
-          </div>
+          <h2 className="recommendations-sidebar__title">Recommendations</h2>
         </div>
         <button
           type="button"
@@ -594,6 +618,7 @@ export default function EnhancedRecommendationsSidebar({
                       isExpanded={expandedCards.has(index)}
                       onToggle={handleCardToggle}
                       onDismiss={handleDismiss}
+                      onViewTable={onViewTable}
                       viewMode={viewMode}
                     />
                   ))}

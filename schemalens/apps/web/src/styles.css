@@ -777,13 +777,15 @@ p {
 
 /* Enhanced sidebar container */
 .recommendations-sidebar.enhanced {
-  width: 420px;
+  min-width: 320px;
+  max-width: 800px;
   background: var(--surface);
   border-left: 1px solid var(--border);
   box-shadow: -8px 0 20px rgba(15, 23, 42, 0.08);
   display: flex;
   flex-direction: column;
   animation: slideInSidebar 0.3s ease-out;
+  position: relative;
 }
 
 @keyframes slideInSidebar {
@@ -795,6 +797,50 @@ p {
     transform: translateX(0);
     opacity: 1;
   }
+}
+
+/* Resize Handle */
+.sidebar-resize-handle {
+  position: absolute;
+  top: 0;
+  left: -4px;
+  width: 8px;
+  height: 100%;
+  cursor: col-resize;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background-color 0.2s ease;
+  opacity: 0;
+  animation: fadeInResizeHandle 0.2s ease-out 0.4s forwards; /* Delay after sidebar animation */
+}
+
+@keyframes fadeInResizeHandle {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.sidebar-resize-handle:hover,
+.sidebar-resize-handle--active {
+  background: rgba(59, 130, 246, 0.1);
+}
+
+.sidebar-resize-handle__grip {
+  width: 2px;
+  height: 32px;
+  background: var(--border);
+  border-radius: 1px;
+  transition: background-color 0.2s ease;
+}
+
+.sidebar-resize-handle:hover .sidebar-resize-handle__grip,
+.sidebar-resize-handle--active .sidebar-resize-handle__grip {
+  background: var(--primary);
 }
 
 /* Enhanced header */
@@ -1019,6 +1065,34 @@ p {
   min-width: 120px;
 }
 
+/* Filter controls styling */
+.recommendations-filter {
+  min-width: 120px;
+}
+
+.recommendations-filter__select {
+  width: 100%;
+  padding: 8px 10px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--surface);
+  color: var(--text);
+  font-size: 12px;
+  cursor: pointer;
+  outline: none;
+  transition: all 0.15s ease;
+}
+
+.recommendations-filter__select:focus {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.1);
+}
+
+.recommendations-filter__select:hover {
+  border-color: var(--border-hover);
+  background: var(--surface-soft);
+}
+
 .recommendations-sort__select {
   width: 100%;
   padding: 8px 10px;
@@ -1118,6 +1192,62 @@ p {
   text-overflow: ellipsis;
 }
 
+.recommendation-card__context {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  flex: 1;
+}
+
+.recommendation-card__table-context {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text-muted);
+  font-family: 'SF Mono', Monaco, 'Cascadia Code', 'Roboto Mono', Consolas, 'Courier New', monospace;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  margin-top: 2px;
+}
+
+.recommendation-card__column-context {
+  color: var(--primary);
+  font-weight: 700;
+}
+
+.recommendation-card__title-section {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  flex: 1;
+}
+
+/* Table information in collapsed cards */
+.recommendation-card__table-info {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11px;
+  color: var(--text-muted);
+  margin-top: 2px;
+}
+
+.recommendation-card__table-name {
+  font-weight: 500;
+  color: var(--primary);
+  background: var(--primary-soft);
+  padding: 1px 6px;
+  border-radius: 4px;
+  font-family: 'SF Mono', Monaco, 'Cascadia Code', 'Roboto Mono', Consolas, 'Courier New', monospace;
+}
+
+.recommendation-card__column-name {
+  color: var(--text-muted);
+  font-style: italic;
+}
+
 .recommendation-card__actions {
   display: flex;
   align-items: center;
@@ -1125,6 +1255,7 @@ p {
   margin-left: 8px;
 }
 
+.recommendation-card__view-table,
 .recommendation-card__dismiss,
 .recommendation-card__toggle {
   width: 24px;
@@ -1138,6 +1269,11 @@ p {
   align-items: center;
   justify-content: center;
   transition: all 0.15s ease;
+}
+
+.recommendation-card__view-table:hover {
+  background: var(--primary-soft);
+  color: var(--primary);
 }
 
 .recommendation-card__dismiss:hover,
@@ -1304,13 +1440,13 @@ p {
 /* Responsive adjustments */
 @media (max-width: 1200px) {
   .recommendations-sidebar.enhanced {
-    width: 380px;
+    min-width: 300px;
   }
 }
 
 @media (max-width: 768px) {
   .recommendations-sidebar.enhanced {
-    width: 100%;
+    width: 100% !important;
     height: 100%;
     position: fixed;
     top: 0;
@@ -1318,6 +1454,11 @@ p {
     z-index: 1000;
     border: none;
     border-radius: 0;
+    max-width: none;
+  }
+
+  .sidebar-resize-handle {
+    display: none; /* Hide resize handle on mobile */
   }
 
   .recommendations-controls {
