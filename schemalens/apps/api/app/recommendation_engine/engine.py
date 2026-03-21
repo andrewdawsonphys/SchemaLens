@@ -2,8 +2,14 @@ import re
 from collections import Counter
 from dataclasses import dataclass
 from abc import ABC, abstractmethod
+from enum import Enum
 from ..crud import get_db_schema
 from ..models import DbSchemaTable
+
+class RecommendationType(str, Enum):
+    ERROR = "error"      # Critical issues (missing PKs, etc.)
+    WARNING = "warning"  # Best practice violations
+    INFO = "info"        # Suggestions for improvement
 
 @dataclass
 class Recommendation:
@@ -13,6 +19,7 @@ class Recommendation:
     element_type: str
     element_name: str
     table_name: str
+    type: RecommendationType = RecommendationType.WARNING
 
 class RecommendationRule(ABC):
 
@@ -67,7 +74,8 @@ class InconsistentNamingConvention(RecommendationRule):
                         description=f"Table name doesn't follow the {' '.join(most_common_convention.split('_'))} convention",
                         element_type="table",
                         element_name=None,
-                        table_name=table_name
+                        table_name=table_name,
+                        type=RecommendationType.WARNING
                     )
                 )
 
@@ -81,7 +89,8 @@ class InconsistentNamingConvention(RecommendationRule):
                             description=f"Column name doesn't follow the {' '.join(most_common_convention.split('_'))} convention",
                             element_type="column",
                             element_name=column_name,
-                            table_name=table_name
+                            table_name=table_name,
+                            type=RecommendationType.WARNING
                         )
                     )
 
@@ -102,7 +111,8 @@ class MissingPrimaryKey(RecommendationRule):
                         description="Table is missing a primary key",
                         element_type="table",
                         element_name=None,
-                        table_name=table_schema.table_name
+                        table_name=table_schema.table_name,
+                        type=RecommendationType.ERROR
                     )
                 )
 
@@ -113,10 +123,11 @@ class RecommendationEngine:
     def __init__(self):
         self.default_rules = [MissingPrimaryKey, InconsistentNamingConvention]
 
-    def get_recommendations(self) -> list[Recommendation]:
+    def get_recommendations(self, table_name: str = None, table_schema: str = "public") -> list[Recommendation]:
         """Generate a recommendation based on the database schema and constraints information"""
         recommendations: list[Recommendation] = []
-        schema = get_db_schema()
+
+        schema = get_db_schema(table_name, table_schema)
 
         for rule in self.default_rules:
             recommendations.extend(rule().check(schema))

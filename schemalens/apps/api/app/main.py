@@ -52,15 +52,16 @@ def get_constraints():
         return {"error": str(e)}
     return relationships
 
+
 @app.get("/api/v1/recommendations")
-def get_recommendations():
+def get_recommendations(table_name: str = None, table_schema: str = "public"):
     """
     Endpoint to retrieve recommendations for improving the database schema based on
     the retrieved schema and constraints information.
     """
     try:
         engine = RecommendationEngine()
-        recommendations = engine.get_recommendations()
+        recommendations = engine.get_recommendations(table_name, table_schema)
     except psycopg.Error as e:
         return {"error": str(e)}
     return recommendations
