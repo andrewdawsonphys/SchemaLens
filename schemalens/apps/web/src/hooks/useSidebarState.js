@@ -30,12 +30,48 @@ export function useSidebarState() {
     tableSchema: 'public',
     tableName: '',
     selectedType: '',
+    viewMode: 'table', // 'table' or 'all'
   });
 
   // Persist sidebar open state to localStorage
   useEffect(() => {
     window.localStorage.setItem(SIDEBAR_STORAGE_KEY, String(state.isOpen));
   }, [state.isOpen]);
+
+  /**
+   * Open sidebar and load recommendations for all schemas
+   */
+  const openAllRecommendations = useCallback(async () => {
+    setState(prev => ({
+      ...prev,
+      isOpen: true,
+      loading: true,
+      error: '',
+      items: [],
+      viewMode: 'all',
+      tableSchema: '',
+      tableName: '',
+      selectedType: '',
+    }));
+
+    try {
+      const allItems = await fetchRecommendations(); // Fetch all recommendations
+      
+      setState(prev => ({
+        ...prev,
+        loading: false,
+        items: allItems,
+      }));
+
+    } catch (error) {
+      console.warn('Failed to fetch all recommendations:', error);
+      setState(prev => ({
+        ...prev,
+        loading: false,
+        error: 'Unable to load recommendations from API.',
+      }));
+    }
+  }, []);
 
   /**
    * Open sidebar and load recommendations for a table
@@ -55,6 +91,7 @@ export function useSidebarState() {
       loading: true,
       error: '',
       items: [],
+      viewMode: 'table',
       tableSchema,
       tableName: effectiveTableName,
       selectedType: type || '',
@@ -157,6 +194,7 @@ export function useSidebarState() {
     
     // Actions
     openSidebar,
+    openAllRecommendations,
     closeSidebar,
     toggleSidebar,
     updateRecommendations,

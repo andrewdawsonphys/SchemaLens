@@ -1,7 +1,7 @@
 import React from 'react';
 import { useTheme } from '../contexts/ThemeContext.jsx';
 
-export default function TopBar({ search }) {
+export default function TopBar({ search, onOpenAllRecommendations }) {
   const { theme, toggleTheme } = useTheme();
   
   const {
@@ -106,6 +106,25 @@ export default function TopBar({ search }) {
       </form>
       
       <div className="app-actions">
+        {onOpenAllRecommendations && (
+          <button
+            type="button"
+            className="recommendations-button"
+            onClick={onOpenAllRecommendations}
+            aria-label="View all schema recommendations"
+            title="View all schema recommendations"
+          >
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M9 11H5a2 2 0 0 0-2 2v7a2 2 0 0 0 2 2h7a2 2 0 0 0 2-2v-4"/>
+              <path d="M19 3H9a2 2 0 0 0-2 2v4"/>
+              <circle cx="13.5" cy="6.5" r=".5"/>
+              <circle cx="17.5" cy="10.5" r=".5"/>
+              <circle cx="8.5" cy="7.5" r=".5"/>
+              <circle cx="15" cy="8" r=".5"/>
+            </svg>
+          </button>
+        )}
+        
         <button
           type="button"
           className={`theme-toggle-switch ${theme === "dark" ? "is-dark" : "is-light"}`}

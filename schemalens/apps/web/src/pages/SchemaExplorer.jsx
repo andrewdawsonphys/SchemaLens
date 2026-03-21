@@ -5,7 +5,7 @@
 import React from 'react';
 import { ReactFlow, Background, Controls, useReactFlow } from '@xyflow/react';
 import TopBar from '../components/TopBar.jsx';
-import RecommendationsSidebar from '../components/RecommendationsSidebar.jsx';
+import EnhancedRecommendationsSidebar from '../components/EnhancedRecommendationsSidebar.jsx';
 import ErdNode from '../components/ErdNode.jsx';
 import ErdEdge from '../components/ErdEdge.jsx';
 import { FullScreenLoader } from '../components/ui/LoadingSpinner.jsx';
@@ -95,7 +95,10 @@ export default function SchemaExplorer() {
 
   return (
     <>
-      <TopBar search={tableSearch} />
+      <TopBar 
+        search={tableSearch} 
+        onOpenAllRecommendations={sidebarState.openAllRecommendations}
+      />
       
       <div className="app-content">
         <div className="graph-container">
@@ -114,7 +117,7 @@ export default function SchemaExplorer() {
           </ReactFlow>
         </div>
 
-        <RecommendationsSidebar
+        <EnhancedRecommendationsSidebar
           isOpen={sidebarState.isOpen}
           loading={sidebarState.loading}
           error={sidebarState.error}
