@@ -2,6 +2,54 @@ import { LayoutHandler } from "./layout_handler";
 
 const API_BASE_URL = "http://localhost:8000/api/v1";
 
+function buildRecommendationCounts(items = []) {
+  return {
+    error: items.filter((item) => item.type === "error").length,
+    warning: items.filter((item) => item.type === "warning").length,
+    info: items.filter((item) => item.type === "info").length,
+  };
+}
+
+function indexRecommendationsByTable(items = [], fallbackSchema = "public") {
+  return items.reduce((acc, item) => {
+    const schema = item.table_schema || fallbackSchema;
+    const key = `${schema}.${item.table_name}`.toLowerCase();
+
+    if (!acc[key]) {
+      acc[key] = [];
+    }
+
+    acc[key].push(item);
+    return acc;
+  }, {});
+}
+
+export async function fetchRecommendations({ table_name, table_schema = "public" } = {}) {
+  const params = new URLSearchParams();
+
+  if (table_name) {
+    params.set("table_name", table_name);
+  }
+
+  if (table_schema) {
+    params.set("table_schema", table_schema);
+  }
+
+  const query = params.toString();
+  const endpoint = query
+    ? `${API_BASE_URL}/recommendations?${query}`
+    : `${API_BASE_URL}/recommendations`;
+
+  const response = await fetch(endpoint);
+
+  if (!response.ok) {
+    throw new Error(`Recommendations API Error: ${response.status}`);
+  }
+
+  const payload = await response.json();
+  return Array.isArray(payload) ? payload : [];
+}
+
 export function build_column_handle_id(columnName) {
   const value = String(columnName ?? "")
     .trim()
@@ -20,6 +68,7 @@ export async function load_schema(setFlow) {
     const schemaData = await schemaResponse.json();
 
     let relationshipsData = [];
+  let recommendationsData = [];
 
     try {
         const relationshipsResponse = await fetch(`${API_BASE_URL}/relationships`);
@@ -34,9 +83,13 @@ export async function load_schema(setFlow) {
         console.warn("Relationships endpoint unavailable, continuing without edges", error);
     }
 
-    const mapped = _map_schema_to_flow(schemaData, relationshipsData);
-    console.log("Loaded relationships:", relationshipsData);
-    console.log("Mapped flow:", mapped);
+    try {
+      recommendationsData = await fetchRecommendations({ table_schema: "public" });
+    } catch (error) {
+      console.warn("Recommendations endpoint unavailable, continuing without recommendations", error);
+    }
+
+    const mapped = _map_schema_to_flow(schemaData, relationshipsData, recommendationsData);
     setFlow(mapped);
     } catch (error) {
     console.error("Failed to load schema", error);
@@ -44,14 +97,19 @@ export async function load_schema(setFlow) {
 
 }
 
-function _map_schema_to_flow(schema, relationships = []) {
+function _map_schema_to_flow(schema, relationships = [], recommendations = []) {
 
   const tables = Array.isArray(schema) ? schema : schema.tables;
+
+  const indexedRecommendations = indexRecommendationsByTable(recommendations, "public");
 
   const nodes = tables.map((table, i) => {
     const tableName = table.table_name
     const schemaName = table.table_schema
     const nodeId = `${schemaName}.${tableName}`;
+    
+    const tableRecommendations = indexedRecommendations[nodeId.toLowerCase()] || [];
+    const counts = buildRecommendationCounts(tableRecommendations);
 
     return {
       id: nodeId,
@@ -67,8 +125,12 @@ function _map_schema_to_flow(schema, relationships = []) {
           is_primary_key: col.is_primary_key,
           is_foreign_key: col.is_foreign_key
         })),
-      },
-    };
+        recommendations: {
+          items: tableRecommendations,
+          counts,
+        }
+      }
+    }
   });
 
   const relationshipRows = Array.isArray(relationships)

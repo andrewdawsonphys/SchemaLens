@@ -27,6 +27,31 @@ export default function TopBar({ onSearchSubmit, onSearchChange, tables = [] }) 
     localStorage.setItem("schemalens-theme", theme);
   }, [theme]);
 
+  useEffect(() => {
+    const handleGlobalSlashShortcut = (event) => {
+      if (event.key !== "/" || event.metaKey || event.ctrlKey || event.altKey) {
+        return;
+      }
+
+      const activeEl = document.activeElement;
+      const isTypingContext =
+        activeEl?.tagName === "INPUT" ||
+        activeEl?.tagName === "TEXTAREA" ||
+        activeEl?.isContentEditable;
+
+      if (isTypingContext) {
+        return;
+      }
+
+      event.preventDefault();
+      inputRef.current?.focus();
+      inputRef.current?.select();
+    };
+
+    window.addEventListener("keydown", handleGlobalSlashShortcut);
+    return () => window.removeEventListener("keydown", handleGlobalSlashShortcut);
+  }, []);
+
   const nextTheme = theme === "dark" ? "light" : "dark";
 
   const handleSearchChange = (event) => {
@@ -160,8 +185,14 @@ export default function TopBar({ onSearchSubmit, onSearchChange, tables = [] }) 
           onBlur={handleInputBlur}
           placeholder="Search tables..."
           aria-label="Search tables"
+          title="Press / to focus"
           autoComplete="off"
         />
+        {!query && (
+          <span className="app-search__shortcut" aria-hidden="true">
+            /
+          </span>
+        )}
         {query && (
           <button
             type="button"

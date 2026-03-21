@@ -180,6 +180,25 @@ p {
   color: var(--text);
 }
 
+.app-search__shortcut {
+  position: absolute;
+  right: 12px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 24px;
+  height: 22px;
+  padding: 0 8px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface);
+  color: var(--muted-text);
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1;
+  pointer-events: none;
+}
+
 /* Search dropdown styles */
 .app-search__dropdown {
   position: absolute;
@@ -429,10 +448,34 @@ p {
   font-weight: 700;
   border-radius: 8px;
   border: 1px solid var(--status-checking);
-  color:  var(--text);
+  color: var(--text);
   display: flex;
   align-items: center;
   justify-content: center;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.erd-node__header__recommendation_count_item:hover {
+  transform: scale(1.05);
+}
+
+.erd-node__header__recommendation_count_item--error {
+  background: rgba(239, 68, 68, 0.1);
+  color: #dc2626;
+  border-color: rgba(239, 68, 68, 0.4);
+}
+
+.erd-node__header__recommendation_count_item--warning {
+  background: rgba(245, 158, 11, 0.1);
+  color: #d97706;
+  border-color: rgba(245, 158, 11, 0.4);
+}
+
+.erd-node__header__recommendation_count_item--info {
+  background: rgba(59, 130, 246, 0.1);
+  color: #2563eb;
+  border-color: rgba(59, 130, 246, 0.4);
 }
 
 .erd-node__body {

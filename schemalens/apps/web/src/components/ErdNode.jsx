@@ -5,15 +5,36 @@ import { build_column_handle_id } from '../schema_utils';
 export default function ErdNode({ data }) {
   const columns = data?.columns ?? [];
   const isHighlighted = data?.isHighlighted || false;
+  const recommendations = data?.recommendations || { counts: { error: 0, warning: 0, info: 0 }, items: [] };
+  
+  const { error: errorCount, warning: warningCount, info: infoCount } = recommendations.counts;
+  const hasRecommendations = errorCount > 0 || warningCount > 0 || infoCount > 0;
+  console.log("Recommendations:", recommendations);
+
   
   return (
     <div className={`erd-node${isHighlighted ? ' erd-node--highlighted' : ''}`}>
       <div className="erd-node__header"> 
         <div>{data?.title ?? "table"}</div>
-        <div className="erd-node__header__recommendation_count">
-          <div className="erd-node__header__recommendation_count_item">{"1 ⚠️"}</div>
-          <div className="erd-node__header__recommendation_count_item">{"3 💡"}</div>
-        </div>
+        {hasRecommendations && (
+          <div className="erd-node__header__recommendation_count">
+            {errorCount > 0 && (
+              <div className="erd-node__header__recommendation_count_item erd-node__header__recommendation_count_item--error">
+                {errorCount} ❌
+              </div>
+            )}
+            {warningCount > 0 && (
+              <div className="erd-node__header__recommendation_count_item erd-node__header__recommendation_count_item--warning">
+                {warningCount} ⚠️
+              </div>
+            )}
+            {infoCount > 0 && (
+              <div className="erd-node__header__recommendation_count_item erd-node__header__recommendation_count_item--info">
+                {infoCount} 💡
+              </div>
+            )}
+          </div>
+        )}
       </div>
 
     <div className="erd-node__body">
