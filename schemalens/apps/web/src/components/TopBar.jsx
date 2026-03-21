@@ -1,208 +1,72 @@
-import { useState, useEffect, useRef } from "react";
+import React from 'react';
+import { useTheme } from '../contexts/ThemeContext.jsx';
 
-export default function TopBar({ onSearchSubmit, onSearchChange, tables = [] }) {
+export default function TopBar({ search }) {
+  const { theme, toggleTheme } = useTheme();
+  
+  const {
+    query,
+    showDropdown,
+    selectedIndex,
+    filteredTables,
+    inputRef,
+    dropdownRef,
+    handleInputChange,
+    handleSubmit,
+    handleKeyDown,
+    handleSuggestionClick,
+    handleFocus,
+    handleBlur,
+    clearSearch,
+  } = search;
 
-  const [theme, setTheme] = useState("light");
-  const [query, setQuery] = useState("");
-  const [showDropdown, setShowDropdown] = useState(false);
-  const [selectedIndex, setSelectedIndex] = useState(-1);
-  const [filteredTables, setFilteredTables] = useState([]);
-  const inputRef = useRef(null);
-  const dropdownRef = useRef(null);
-
-  useEffect(() => {
-    const savedTheme = localStorage.getItem("schemalens-theme");
-
-    if (savedTheme === "light" || savedTheme === "dark") {
-      setTheme(savedTheme);
-      return;
-    }
-
-    const prefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
-    setTheme(prefersDark ? "dark" : "light");
-  }, []);
-
-  useEffect(() => {
-    document.documentElement.setAttribute("data-theme", theme);
-    localStorage.setItem("schemalens-theme", theme);
-  }, [theme]);
-
-  useEffect(() => {
-    const handleGlobalSlashShortcut = (event) => {
-      if (event.key !== "/" || event.metaKey || event.ctrlKey || event.altKey) {
-        return;
-      }
-
-      const activeEl = document.activeElement;
-      const isTypingContext =
-        activeEl?.tagName === "INPUT" ||
-        activeEl?.tagName === "TEXTAREA" ||
-        activeEl?.isContentEditable;
-
-      if (isTypingContext) {
-        return;
-      }
-
-      event.preventDefault();
-      inputRef.current?.focus();
-      inputRef.current?.select();
-    };
-
-    window.addEventListener("keydown", handleGlobalSlashShortcut);
-    return () => window.removeEventListener("keydown", handleGlobalSlashShortcut);
-  }, []);
-
-  const nextTheme = theme === "dark" ? "light" : "dark";
-
-  const handleSearchChange = (event) => {
-    const nextQuery = event.target.value;
-    setQuery(nextQuery);
-    onSearchChange?.(nextQuery);
-
-    // Filter tables for dropdown
-    if (nextQuery.trim()) {
-      const filtered = tables.filter((table) => {
-        const tableName = (table.data?.title || table.title || "").toLowerCase();
-        const tableId = (table.id || "").toLowerCase();
-        const searchTerm = nextQuery.toLowerCase();
-        return tableName.includes(searchTerm) || tableId.includes(searchTerm);
-      }).slice(0, 10); // Limit to 10 results
-      
-      setFilteredTables(filtered);
-      setShowDropdown(filtered.length > 0);
-      setSelectedIndex(-1);
-    } else {
-      setFilteredTables([]);
-      setShowDropdown(false);
-    }
-  };
-
-  const handleSearchSubmit = (event) => {
+  const handleFormSubmit = (event) => {
     event.preventDefault();
-    const targetQuery = selectedIndex >= 0 && filteredTables[selectedIndex] 
-      ? (filteredTables[selectedIndex].data?.title || filteredTables[selectedIndex].title || query.trim())
-      : query.trim();
-    
-    onSearchSubmit?.(targetQuery);
-    setShowDropdown(false);
-    setSelectedIndex(-1);
+    handleSubmit();
   };
 
-  const handleKeyDown = (event) => {
-    if (!showDropdown || filteredTables.length === 0) {
-      if (event.key === 'Escape') {
-        setShowDropdown(false);
-        setSelectedIndex(-1);
-      }
-      return;
-    }
+  const nextTheme = theme === 'dark' ? 'light' : 'dark';
 
-    switch (event.key) {
-      case 'ArrowDown':
-        event.preventDefault();
-        const nextIndex = selectedIndex < filteredTables.length - 1 ? selectedIndex + 1 : 0;
-        setSelectedIndex(nextIndex);
-        // Update search input with selected item
-        const nextTable = filteredTables[nextIndex];
-        const nextTableName = nextTable?.data?.title || nextTable?.title || '';
-        setQuery(nextTableName);
-        break;
-      case 'ArrowUp':
-        event.preventDefault();
-        const prevIndex = selectedIndex > 0 ? selectedIndex - 1 : filteredTables.length - 1;
-        setSelectedIndex(prevIndex);
-        // Update search input with selected item
-        const prevTable = filteredTables[prevIndex];
-        const prevTableName = prevTable?.data?.title || prevTable?.title || '';
-        setQuery(prevTableName);
-        break;
-      case 'Enter':
-        event.preventDefault();
-        if (selectedIndex >= 0) {
-          const selectedTable = filteredTables[selectedIndex];
-          const tableName = selectedTable.data?.title || selectedTable.title || '';
-          setQuery(tableName);
-          onSearchSubmit?.(tableName);
-        } else {
-          onSearchSubmit?.(query.trim());
-        }
-        setShowDropdown(false);
-        setSelectedIndex(-1);
-        break;
-      case 'Escape':
-        setShowDropdown(false);
-        setSelectedIndex(-1);
-        inputRef.current?.blur();
-        break;
-    }
-  };
-
-  const handleDropdownItemClick = (table) => {
-    const tableName = table.data?.title || table.title || '';
-    setQuery(tableName);
-    onSearchSubmit?.(tableName);
-    setShowDropdown(false);
-    setSelectedIndex(-1);
-    inputRef.current?.focus();
-  };
-
-  const handleInputFocus = () => {
-    if (query.trim() && filteredTables.length > 0) {
-      setShowDropdown(true);
-    }
-  };
-
-  const handleInputBlur = (event) => {
-    // Delay hiding dropdown to allow clicking on items
-    setTimeout(() => {
-      if (!dropdownRef.current?.contains(document.activeElement)) {
-        setShowDropdown(false);
-        setSelectedIndex(-1);
-      }
-    }, 150);
-  };
-
-  return <>
+  return (
     <header className="app-topbar">
       <div className="app-brand">
         <span className="app-title">SchemaLens</span>
       </div>
-      <form className="app-search" onSubmit={handleSearchSubmit}>
+      
+      <form className="app-search" onSubmit={handleFormSubmit}>
         <span className="app-search__icon" aria-hidden="true">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
             <circle cx="11" cy="11" r="8"/>
             <line x1="21" y1="21" x2="16.65" y2="16.65"/>
           </svg>
         </span>
+        
         <input
           ref={inputRef}
           type="search"
           className="app-search__input"
           value={query}
-          onChange={handleSearchChange}
+          onChange={(e) => handleInputChange(e.target.value)}
           onKeyDown={handleKeyDown}
-          onFocus={handleInputFocus}
-          onBlur={handleInputBlur}
+          onFocus={handleFocus}
+          onBlur={handleBlur}
           placeholder="Search tables..."
           aria-label="Search tables"
           title="Press / to focus"
           autoComplete="off"
         />
+        
         {!query && (
           <span className="app-search__shortcut" aria-hidden="true">
             /
           </span>
         )}
+        
         {query && (
           <button
             type="button"
             className="app-search__clear"
-            onClick={() => { 
-              setQuery(""); 
-              onSearchChange?.(""); 
-              setShowDropdown(false);
-              setFilteredTables([]);
-            }}
+            onClick={clearSearch}
             aria-label="Clear search"
           >
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -211,6 +75,7 @@ export default function TopBar({ onSearchSubmit, onSearchChange, tables = [] }) 
             </svg>
           </button>
         )}
+        
         {showDropdown && filteredTables.length > 0 && (
           <div ref={dropdownRef} className="app-search__dropdown">
             {filteredTables.map((table, index) => {
@@ -223,8 +88,11 @@ export default function TopBar({ onSearchSubmit, onSearchChange, tables = [] }) 
                   className={`app-search__dropdown-item${
                     index === selectedIndex ? ' app-search__dropdown-item--selected' : ''
                   }`}
-                  onClick={() => handleDropdownItemClick(table)}
-                  onMouseEnter={() => setSelectedIndex(index)}
+                  onClick={() => handleSuggestionClick(table)}
+                  onMouseEnter={() => {
+                    // This would be handled by the search hook if needed
+                    // For now we'll just rely on keyboard navigation
+                  }}
                 >
                   <div className="app-search__dropdown-item-title">{tableName}</div>
                   {tableId && tableId !== tableName && (
@@ -236,11 +104,12 @@ export default function TopBar({ onSearchSubmit, onSearchChange, tables = [] }) 
           </div>
         )}
       </form>
+      
       <div className="app-actions">
         <button
           type="button"
           className={`theme-toggle-switch ${theme === "dark" ? "is-dark" : "is-light"}`}
-          onClick={() => setTheme(nextTheme)}
+          onClick={toggleTheme}
           aria-label={`Switch to ${nextTheme} mode`}
           role="switch"
           aria-checked={theme === "dark"}
@@ -251,5 +120,5 @@ export default function TopBar({ onSearchSubmit, onSearchChange, tables = [] }) 
         </button>
       </div>
     </header>
-  </>
+  );
 }
