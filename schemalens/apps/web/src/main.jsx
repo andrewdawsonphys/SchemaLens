@@ -6,7 +6,18 @@ import { createRoot } from "react-dom/client";
 import ErdNode from "./components/ErdNode.jsx";
 import ErdEdge from "./components/ErdEdge";
 import TopBar from "./components/TopBar.jsx";
+import RecommendationsSidebar from "./components/RecommendationsSidebar.jsx";
 import { load_schema, fetchRecommendations } from "./schema_utils.jsx"
+
+const SIDEBAR_OPEN_STORAGE_KEY = "schemalens-recommendations-sidebar-open";
+
+function getInitialSidebarOpenState() {
+  if (typeof window === "undefined") {
+    return false;
+  }
+
+  return window.localStorage.getItem(SIDEBAR_OPEN_STORAGE_KEY) === "true";
+}
 
 function buildRecommendationCounts(items = []) {
   return {
@@ -19,6 +30,15 @@ function buildRecommendationCounts(items = []) {
 function FlowContent() {
   const [flow, setFlow] = useState({ nodes: [], edges: [] });
   const [highlightedNodeId, setHighlightedNodeId] = useState(null);
+  const [sidebarState, setSidebarState] = useState({
+    isOpen: getInitialSidebarOpenState(),
+    loading: false,
+    error: "",
+    items: [],
+    tableSchema: "public",
+    tableName: "",
+    selectedType: "",
+  });
 
   const { setCenter } = useReactFlow();
 
@@ -91,9 +111,52 @@ function FlowContent() {
     }
   }, [flow.nodes, setCenter]);
 
+  const handleRecommendationIconClick = useCallback(({ type, nodeId, tableName }) => {
+    const [tableSchema = "public", parsedTableName = tableName || ""] = String(nodeId || "").split(".");
+    const effectiveTableName = parsedTableName || tableName || "";
+
+    if (!effectiveTableName) {
+      return;
+    }
+
+    setSidebarState((prev) => ({
+      ...prev,
+      isOpen: true,
+      loading: true,
+      error: "",
+      items: [],
+      tableSchema,
+      tableName: effectiveTableName,
+      selectedType: type || "",
+    }));
+
+    fetchRecommendations({ table_name: effectiveTableName, table_schema: tableSchema })
+      .then((allItems) => {
+        const filteredItems = type ? allItems.filter((item) => item.type === type) : allItems;
+
+        setSidebarState((prev) => ({
+          ...prev,
+          loading: false,
+          items: filteredItems,
+        }));
+      })
+      .catch((error) => {
+        setSidebarState((prev) => ({
+          ...prev,
+          loading: false,
+          error: "Unable to load recommendations from API.",
+        }));
+        console.warn("Failed to fetch sidebar recommendations", error);
+      });
+  }, []);
+
   useEffect(() => {
     load_schema(setFlow);
   }, []);
+
+  useEffect(() => {
+    window.localStorage.setItem(SIDEBAR_OPEN_STORAGE_KEY, String(sidebarState.isOpen));
+  }, [sidebarState.isOpen]);
 
   return (
     <>
@@ -111,7 +174,8 @@ function FlowContent() {
               ...node,
               data: {
                 ...node.data,
-                isHighlighted: highlightedNodeId === node.id
+                isHighlighted: highlightedNodeId === node.id,
+                onRecommendationClick: handleRecommendationIconClick,
               }
             }))}
             edges={flow.edges}
@@ -124,6 +188,16 @@ function FlowContent() {
             <Controls />
           </ReactFlow>
         </div>
+        <RecommendationsSidebar
+          isOpen={sidebarState.isOpen}
+          loading={sidebarState.loading}
+          error={sidebarState.error}
+          items={sidebarState.items}
+          tableSchema={sidebarState.tableSchema}
+          tableName={sidebarState.tableName}
+          selectedType={sidebarState.selectedType}
+          onClose={() => setSidebarState((prev) => ({ ...prev, isOpen: false }))}
+        />
       </div>
     </>
   );

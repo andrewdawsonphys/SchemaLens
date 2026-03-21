@@ -6,10 +6,19 @@ export default function ErdNode({ data }) {
   const columns = data?.columns ?? [];
   const isHighlighted = data?.isHighlighted || false;
   const recommendations = data?.recommendations || { counts: { error: 0, warning: 0, info: 0 }, items: [] };
+  const onRecommendationClick = data?.onRecommendationClick;
   
   const { error: errorCount, warning: warningCount, info: infoCount } = recommendations.counts;
   const hasRecommendations = errorCount > 0 || warningCount > 0 || infoCount > 0;
-  console.log("Recommendations:", recommendations);
+
+  const handleRecommendationClick = (event, type) => {
+    event.stopPropagation();
+    onRecommendationClick?.({
+      type,
+      tableName: data?.title,
+      nodeId: data?.nodeId,
+    });
+  };
 
   
   return (
@@ -19,19 +28,34 @@ export default function ErdNode({ data }) {
         {hasRecommendations && (
           <div className="erd-node__header__recommendation_count">
             {errorCount > 0 && (
-              <div className="erd-node__header__recommendation_count_item erd-node__header__recommendation_count_item--error">
+              <button
+                type="button"
+                className="erd-node__header__recommendation_count_item erd-node__header__recommendation_count_item--error"
+                onClick={(event) => handleRecommendationClick(event, "error")}
+                title="View error recommendations"
+              >
                 {errorCount} ❌
-              </div>
+              </button>
             )}
             {warningCount > 0 && (
-              <div className="erd-node__header__recommendation_count_item erd-node__header__recommendation_count_item--warning">
+              <button
+                type="button"
+                className="erd-node__header__recommendation_count_item erd-node__header__recommendation_count_item--warning"
+                onClick={(event) => handleRecommendationClick(event, "warning")}
+                title="View warning recommendations"
+              >
                 {warningCount} ⚠️
-              </div>
+              </button>
             )}
             {infoCount > 0 && (
-              <div className="erd-node__header__recommendation_count_item erd-node__header__recommendation_count_item--info">
+              <button
+                type="button"
+                className="erd-node__header__recommendation_count_item erd-node__header__recommendation_count_item--info"
+                onClick={(event) => handleRecommendationClick(event, "info")}
+                title="View info recommendations"
+              >
                 {infoCount} 💡
-              </div>
+              </button>
             )}
           </div>
         )}
