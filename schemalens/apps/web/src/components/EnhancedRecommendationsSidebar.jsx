@@ -38,6 +38,161 @@ const SORT_OPTIONS = [
 ];
 
 /**
+ * Statistics tiles component showing key metrics
+ */
+function StatisticsTiles({ items, viewMode }) {
+  const counts = buildRecommendationCounts(items);
+  const totalIssues = items.length;
+  
+  // Calculate schema health score (0-100)
+  const calculateSchemaScore = () => {
+    if (totalIssues === 0) return 100;
+    
+    // Weight errors more heavily than warnings
+    const errorWeight = 3;
+    const warningWeight = 2;
+    const infoWeight = 1;
+    
+    const totalWeight = (counts.error * errorWeight) + (counts.warning * warningWeight) + (counts.info * infoWeight);
+    const maxPossibleWeight = totalIssues * errorWeight;
+    
+    // Convert to 0-100 scale (inverted so 100 = perfect)
+    const score = Math.max(0, 100 - Math.round((totalWeight / maxPossibleWeight) * 100));
+    return score;
+  };
+  
+  const schemaScore = calculateSchemaScore();
+  
+  // Determine score color based on value
+  const getScoreColor = (score) => {
+    if (score >= 80) return 'text-green-600 dark:text-green-400';
+    if (score >= 60) return 'text-yellow-600 dark:text-yellow-400';
+    return 'text-red-600 dark:text-red-400';
+  };
+  
+  const getScoreStatus = (score) => {
+    if (score >= 80) return 'Excellent';
+    if (score >= 60) return 'Good';
+    if (score >= 40) return 'Fair';
+    return 'Needs Work';
+  };
+
+  return (
+    <div className="statistics-tiles">
+      <div className="statistics-tiles__grid">
+        
+        {/* Schema Health Score */}
+        <div className="statistics-tile statistics-tile--score">
+          <div className="statistics-tile__header">
+            <div className="statistics-tile__icon">
+              <svg width="20" height="20" fill="currentColor" viewBox="0 0 24 24">
+                <path d="M12 2L13.09 8.26L20 9L13.09 9.74L12 16L10.91 9.74L4 9L10.91 8.26L12 2Z" />
+              </svg>
+            </div>
+            <span className="statistics-tile__label">Schema Score</span>
+          </div>
+          <div className="statistics-tile__content">
+            <div className={`statistics-tile__value ${getScoreColor(schemaScore)}`}>
+              {schemaScore}/100
+            </div>
+            <div className="statistics-tile__subtitle">
+              {getScoreStatus(schemaScore)}
+            </div>
+          </div>
+        </div>
+
+        {/* Total Issues */}
+        <div className="statistics-tile statistics-tile--total">
+          <div className="statistics-tile__header">
+            <div className="statistics-tile__icon">
+              <svg width="20" height="20" fill="currentColor" viewBox="0 0 24 24">
+                <path d="M9 11H15V13H9V11M9 7H15V9H9V7M4 5V19L7 16H18V5H4Z" />
+              </svg>
+            </div>
+            <span className="statistics-tile__label">Total Issues</span>
+          </div>
+          <div className="statistics-tile__content">
+            <div className="statistics-tile__value text-gray-700 dark:text-gray-200">
+              {totalIssues}
+            </div>
+            <div className="statistics-tile__subtitle">
+              {viewMode === 'all' ? 'All Tables' : 'This Table'}
+            </div>
+          </div>
+        </div>
+
+        {/* Errors */}
+        {counts.error > 0 && (
+          <div className="statistics-tile statistics-tile--error">
+            <div className="statistics-tile__header">
+              <div className="statistics-tile__icon">
+                <svg width="20" height="20" fill="currentColor" viewBox="0 0 24 24">
+                  <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z" />
+                </svg>
+              </div>
+              <span className="statistics-tile__label">Errors</span>
+            </div>
+            <div className="statistics-tile__content">
+              <div className="statistics-tile__value text-red-600 dark:text-red-400">
+                {counts.error}
+              </div>
+              <div className="statistics-tile__subtitle">
+                High Priority
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Warnings */}
+        {counts.warning > 0 && (
+          <div className="statistics-tile statistics-tile--warning">
+            <div className="statistics-tile__header">
+              <div className="statistics-tile__icon">
+                <svg width="20" height="20" fill="currentColor" viewBox="0 0 24 24">
+                  <path d="M1 21h22L12 2 1 21zm12-3h-2v-2h2v2zm0-4h-2v-4h2v4z" />
+                </svg>
+              </div>
+              <span className="statistics-tile__label">Warnings</span>
+            </div>
+            <div className="statistics-tile__content">
+              <div className="statistics-tile__value text-yellow-600 dark:text-yellow-400">
+                {counts.warning}
+              </div>
+              <div className="statistics-tile__subtitle">
+                Medium Priority
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Info */}
+        {counts.info > 0 && (
+          <div className="statistics-tile statistics-tile--info">
+            <div className="statistics-tile__header">
+              <div className="statistics-tile__icon">
+                <svg width="20" height="20" fill="currentColor" viewBox="0 0 24 24">
+                  <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z" />
+                </svg>
+              </div>
+              <span className="statistics-tile__label">Info</span>
+            </div>
+            <div className="statistics-tile__content">
+              <div className="statistics-tile__value text-blue-600 dark:text-blue-400">
+                {counts.info}
+              </div>
+              <div className="statistics-tile__subtitle">
+                Low Priority
+              </div>
+            </div>
+          </div>
+        )}
+
+      </div>
+    </div>
+  );
+}
+
+/**
  * Statistics header component
  */
 function RecommendationsStats({ items, selectedFilter, onFilterChange }) {
@@ -579,6 +734,13 @@ export default function EnhancedRecommendationsSidebar({
 
         {!loading && !error && (
           <>
+            {items.length > 0 && (
+              <StatisticsTiles 
+                items={items.filter(item => !dismissedItems.has(item.name))}
+                viewMode={viewMode}
+              />
+            )}
+            
             <RecommendationsStats
               items={items.filter(item => !dismissedItems.has(item.name))}
               selectedFilter={selectedFilter}
