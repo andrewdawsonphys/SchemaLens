@@ -74,6 +74,22 @@ export function useSidebarState() {
   }, []);
 
   /**
+   * Toggle sidebar with all recommendations - close if open, open if closed
+   */
+  const toggleAllRecommendations = useCallback(async () => {
+    if (state.isOpen) {
+      // If sidebar is open, close it
+      setState(prev => ({
+        ...prev,
+        isOpen: false,
+      }));
+    } else {
+      // If sidebar is closed, open it with all recommendations
+      await openAllRecommendations();
+    }
+  }, [state.isOpen, openAllRecommendations]);
+
+  /**
    * Open sidebar and load recommendations for a table
    */
   const openSidebar = useCallback(async ({ nodeId, tableName, type }) => {
@@ -203,6 +219,7 @@ export function useSidebarState() {
     // Actions
     openSidebar,
     openAllRecommendations,
+    toggleAllRecommendations,
     closeSidebar,
     toggleSidebar,
     updateRecommendations,

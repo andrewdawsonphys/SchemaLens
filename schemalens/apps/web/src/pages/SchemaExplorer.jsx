@@ -123,7 +123,7 @@ export default function SchemaExplorer() {
     <>
       <TopBar 
         search={tableSearch} 
-        onOpenAllRecommendations={sidebarState.openAllRecommendations}
+        onOpenAllRecommendations={sidebarState.toggleAllRecommendations}
       />
       
       <div className="app-content">

@@ -490,6 +490,9 @@ export default function EnhancedRecommendationsSidebar({
     onViewTable,
     }) {
     
+    const [isClosing, setIsClosing] = useState(false);
+    const [shouldRender, setShouldRender] = useState(isOpen);
+    
     const [searchQuery, setSearchQuery] = useState('');
     const [selectedFilter, setSelectedFilter] = useState(selectedType || '');
     const [tableFilter, setTableFilter] = useState('');
@@ -505,6 +508,22 @@ export default function EnhancedRecommendationsSidebar({
     useEffect(() => {
         setSelectedFilter(selectedType || '');
     }, [selectedType]);
+
+    // Handle isOpen prop changes for animations
+    useEffect(() => {
+        if (isOpen) {
+            setShouldRender(true);
+            setIsClosing(false);
+        } else if (shouldRender) {
+            setIsClosing(true);
+            // Hide after animation completes
+            const timer = setTimeout(() => {
+                setShouldRender(false);
+                setIsClosing(false);
+            }, 250); // Match the animation duration
+            return () => clearTimeout(timer);
+        }
+    }, [isOpen, shouldRender]);
 
     const { availableTables, availableSchemas } = useMemo(() => {
         if (viewMode !== 'all') {
@@ -613,14 +632,14 @@ export default function EnhancedRecommendationsSidebar({
         onClose?.();
     };
 
-    // Use prop-controlled state from parent
-    if (!isOpen) {
+    // Don't render if not open and not animating
+    if (!shouldRender) {
         return null;
     }
 
     return (
     <aside 
-        className="recommendations-sidebar enhanced" 
+        className={`recommendations-sidebar enhanced ${isClosing ? 'closing' : ''}`}
         style={{ width: `${width}px` }}
         aria-label="Recommendations panel"
     >

@@ -799,6 +799,22 @@ p {
   }
 }
 
+@keyframes slideOutSidebar {
+  from {
+    transform: translateX(0);
+    opacity: 1;
+  }
+  to {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+}
+
+.recommendations-sidebar.enhanced.closing {
+  animation: slideOutSidebar 0.25s ease-in;
+  animation-fill-mode: forwards;
+}
+
 /* Resize Handle */
 .sidebar-resize-handle {
   position: absolute;
