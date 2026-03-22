@@ -4,7 +4,7 @@
  */
 
 import { LayoutHandler } from "../layout_handler.jsx";
-import { build_recommendation_counts } from "./recommendationHelpers.js";
+import { build_recommendation_counts, index_recommendations_by_table } from "./recommendationHelpers.js";
 
 /**
  * Normalize column names for React Flow handles
