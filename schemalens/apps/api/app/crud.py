@@ -1,4 +1,5 @@
 import os
+from typing import Optional
 from dataclasses import asdict
 from typing import Any
 
@@ -59,7 +60,7 @@ def get_db_relationships() -> list[dict[str, Any]]:
 
     return [asdict(DbConstraint(**row)) for row in rows]
 
-def get_db_schema(table_name: str = None, table_schema: str = "public") -> list[dict[str, Any]]:
+def get_db_schema(table_name: str = None, table_schema: Optional[str] = None) -> list[dict[str, Any]]:
     """
     Query the database to retrieve the schema information, including tables,
     columns, data types, and constraints.
@@ -115,15 +116,18 @@ def get_db_schema(table_name: str = None, table_schema: str = "public") -> list[
                 WHERE rc.constraint_schema = t.table_schema
             )
     """
+    filters, params = [], []
+    filters.append("t.table_schema NOT IN ('information_schema', 'pg_catalog')")
 
-    filters = ["WHERE t.table_schema = %s"]
-    params = [table_schema]
+    if table_schema:
+        filters.append("t.table_schema = %s")
+        params.append(table_schema)
 
     if table_name:
         filters.append("t.table_name = %s")
         params.append(table_name)
 
-    stmt += " AND ".join(filters) + " ORDER BY t.table_name, c.ordinal_position;"
+    stmt += ("WHERE " + " AND ".join(filters) if filters else "") + " ORDER BY t.table_name, c.ordinal_position;"
 
     with get_db_connection() as connection:
         with connection.cursor(row_factory=dict_row) as cur:
