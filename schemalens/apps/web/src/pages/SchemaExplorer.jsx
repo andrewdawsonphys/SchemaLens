@@ -139,7 +139,7 @@ export default function SchemaExplorer() {
             proOptions={{ hideAttribution: true }}
           >
             <Background />
-            <Controls />
+            {/* <Controls /> */}
           </ReactFlow>
         </div>
 
