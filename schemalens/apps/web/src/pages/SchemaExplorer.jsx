@@ -8,6 +8,7 @@ import TopBar from '../components/TopBar.jsx';
 import EnhancedRecommendationsSidebar from '../components/EnhancedRecommendationsSidebar.jsx';
 import ErdNode from '../components/ErdNode.jsx';
 import ErdEdge from '../components/ErdEdge.jsx';
+import SchemaGroup from '../components/SchemaGroup.jsx';
 import { FullScreenLoader } from '../components/ui/LoadingSpinner.jsx';
 import { FullScreenError } from '../components/ui/ErrorMessage.jsx';
 import { useFlowGraph } from '../hooks/useFlowGraph.js';
@@ -123,13 +124,13 @@ export default function SchemaExplorer() {
     <>
       <TopBar 
         search={tableSearch} 
-        onOpenAllRecommendations={sidebarState.openAllRecommendations}
+        onOpenAllRecommendations={sidebarState.toggleAllRecommendations}
       />
       
       <div className="app-content">
         <div className="graph-container">
           <ReactFlow
-            nodeTypes={{ erdNode: ErdNode }}
+            nodeTypes={{ erdNode: ErdNode, schemaGroup: SchemaGroup }}
             edgeTypes={{ erdEdge: ErdEdge }}
             nodes={enhancedNodes}
             edges={flow.edges}
@@ -139,7 +140,7 @@ export default function SchemaExplorer() {
             proOptions={{ hideAttribution: true }}
           >
             <Background />
-            <Controls />
+            {/* <Controls /> */}
           </ReactFlow>
         </div>
 

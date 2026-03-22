@@ -4,7 +4,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { fetchRecommendations } from '../services/api.js';
-import { filterRecommendationsByType } from '../utils/recommendationHelpers.js';
+import { filter_recommendations_by_type } from '../utils/recommendationHelpers.js';
 
 const SIDEBAR_STORAGE_KEY = "schemalens-recommendations-sidebar-open";
 
@@ -56,7 +56,7 @@ export function useSidebarState() {
 
     try {
       const allItems = await fetchRecommendations(); // Fetch all recommendations
-      
+
       setState(prev => ({
         ...prev,
         loading: false,
@@ -72,6 +72,22 @@ export function useSidebarState() {
       }));
     }
   }, []);
+
+  /**
+   * Toggle sidebar with all recommendations - close if open, open if closed
+   */
+  const toggleAllRecommendations = useCallback(async () => {
+    if (state.isOpen) {
+      // If sidebar is open, close it
+      setState(prev => ({
+        ...prev,
+        isOpen: false,
+      }));
+    } else {
+      // If sidebar is closed, open it with all recommendations
+      await openAllRecommendations();
+    }
+  }, [state.isOpen, openAllRecommendations]);
 
   /**
    * Open sidebar and load recommendations for a table
@@ -103,7 +119,7 @@ export function useSidebarState() {
         table_schema: tableSchema 
       });
 
-      const filteredItems = filterRecommendationsByType(allItems, type);
+      const filteredItems = filter_recommendations_by_type(allItems, type);
 
       setState(prev => ({
         ...prev,
@@ -145,7 +161,7 @@ export function useSidebarState() {
    * Update recommendations without changing other state
    */
   const updateRecommendations = useCallback((items, selectedType = '') => {
-    const filteredItems = filterRecommendationsByType(items, selectedType);
+    const filteredItems = filter_recommendations_by_type(items, selectedType);
     
     setState(prev => ({
       ...prev,
@@ -188,6 +204,14 @@ export function useSidebarState() {
     }));
   }, []);
 
+  // Auto-load recommendations if sidebar was open on page refresh
+  useEffect(() => {
+    if (state.isOpen && state.items.length === 0 && !state.loading) {
+      // If sidebar is open but no data loaded, load all recommendations
+      openAllRecommendations();
+    }
+  }, []); // Only run on mount
+
   return {
     // State
     ...state,
@@ -195,6 +219,7 @@ export function useSidebarState() {
     // Actions
     openSidebar,
     openAllRecommendations,
+    toggleAllRecommendations,
     closeSidebar,
     toggleSidebar,
     updateRecommendations,

@@ -19,8 +19,8 @@ export {
 } from './utils/schemaTransform.js';
 
 export { 
-  buildRecommendationCounts,
-  indexRecommendationsByTable 
+  build_recommendation_counts,
+  index_recommendations_by_table 
 } from './utils/recommendationHelpers.js';
 
 // Backward compatibility wrapper for load_schema

@@ -3,12 +3,7 @@
  * Functions for processing, counting, and indexing recommendations
  */
 
-/**
- * Count recommendations by type (error, warning, info)
- * @param {Array} items - Array of recommendation items
- * @returns {Object} Count object with error, warning, info properties
- */
-export function buildRecommendationCounts(items = []) {
+export function build_recommendation_counts(items = []) {
   return {
     error: items.filter((item) => item.type === "error").length,
     warning: items.filter((item) => item.type === "warning").length,
@@ -16,13 +11,7 @@ export function buildRecommendationCounts(items = []) {
   };
 }
 
-/**
- * Group recommendations by table identifier (schema.table_name)
- * @param {Array} items - Array of recommendation items
- * @param {string} fallbackSchema - Default schema if not specified in item
- * @returns {Object} Object indexed by table ID containing arrays of recommendations
- */
-export function indexRecommendationsByTable(items = [], fallbackSchema = "public") {
+export function index_recommendations_by_table(items = [], fallbackSchema = "public") {
   return items.reduce((acc, item) => {
     const schema = item.table_schema || fallbackSchema;
     const key = `${schema}.${item.table_name}`.toLowerCase();
@@ -36,41 +25,21 @@ export function indexRecommendationsByTable(items = [], fallbackSchema = "public
   }, {});
 }
 
-/**
- * Filter recommendations by type
- * @param {Array} items - Array of recommendation items
- * @param {string} type - Type to filter by ('error', 'warning', 'info')
- * @returns {Array} Filtered recommendations
- */
-export function filterRecommendationsByType(items = [], type) {
+
+export function filter_recommendations_by_type(items = [], type) {
   if (!type) return items;
   return items.filter((item) => item.type === type);
 }
 
-/**
- * Get unique recommendation types from items
- * @param {Array} items - Array of recommendation items
- * @returns {Array} Array of unique types
- */
-export function getRecommendationTypes(items = []) {
+export function get_recommendation_types(items = []) {
   return [...new Set(items.map(item => item.type))];
 }
 
-/**
- * Check if recommendations have any errors
- * @param {Array} items - Array of recommendation items
- * @returns {boolean} True if any errors exist
- */
-export function hasErrors(items = []) {
+export function has_errors(items = []) {
   return items.some(item => item.type === 'error');
 }
 
-/**
- * Sort recommendations by priority (error > warning > info)
- * @param {Array} items - Array of recommendation items
- * @returns {Array} Sorted recommendations
- */
-export function sortRecommendationsByPriority(items = []) {
+export function sort_recommendations_by_priority(items = []) {
   const typePriority = { error: 0, warning: 1, info: 2 };
   
   return [...items].sort((a, b) => {
@@ -78,4 +47,23 @@ export function sortRecommendationsByPriority(items = []) {
     const priorityB = typePriority[b.type] ?? 3;
     return priorityA - priorityB;
   });
+}
+
+export function calculate_schema_score(counts, total_issues) {
+  if (total_issues === 0) return 100;
+  const penalty = (counts.error * 10) + (counts.warning * 5) + (counts.info * 2);
+  return Math.max(0, 100-penalty);
+};
+
+export function get_score_color(score) {
+  if (score >= 80) return 'text-green-600 dark:text-green-400';
+  if (score >= 60) return 'text-yellow-600 dark:text-yellow-400';
+  return 'text-red-600 dark:text-red-400';
+}
+
+export function get_score_status(score) {
+  if (score >= 80) return 'Excellent';
+  if (score >= 60) return 'Good';
+  if (score >= 40) return 'Fair';
+  return 'Needs Work';
 }
