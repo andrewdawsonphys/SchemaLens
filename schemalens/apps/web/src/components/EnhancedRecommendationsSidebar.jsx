@@ -47,18 +47,8 @@ function StatisticsTiles({ items, viewMode }) {
   // Calculate schema health score (0-100)
   const calculateSchemaScore = () => {
     if (totalIssues === 0) return 100;
-    
-    // Weight errors more heavily than warnings
-    const errorWeight = 3;
-    const warningWeight = 2;
-    const infoWeight = 1;
-    
-    const totalWeight = (counts.error * errorWeight) + (counts.warning * warningWeight) + (counts.info * infoWeight);
-    const maxPossibleWeight = totalIssues * errorWeight;
-    
-    // Convert to 0-100 scale (inverted so 100 = perfect)
-    const score = Math.max(0, 100 - Math.round((totalWeight / maxPossibleWeight) * 100));
-    return score;
+    const penalty = (counts.error * 10) + (counts.warning * 5) + (counts.info * 2);
+    return Math.max(0, 100-penalty);
   };
   
   const schemaScore = calculateSchemaScore();
