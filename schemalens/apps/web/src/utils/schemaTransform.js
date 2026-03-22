@@ -4,7 +4,7 @@
  */
 
 import { LayoutHandler } from "../layout_handler.jsx";
-import { build_recommendation_counts, index_recommendations_by_table } from "./recommendationHelpers.js";
+import { build_recommendation_counts } from "./recommendationHelpers.js";
 
 /**
  * Normalize column names for React Flow handles
@@ -27,7 +27,7 @@ export function transformTablesToNodes(tables, indexedRecommendations = {}) {
     const schemaName = table.table_schema;
     const nodeId = `${schemaName}.${tableName}`;
     
-    const tableRecommendations = index_recommendations_by_table[nodeId.toLowerCase()] || [];
+    const tableRecommendations = indexedRecommendations[nodeId.toLowerCase()] || [];
     const counts = build_recommendation_counts(tableRecommendations);
 
     return {
