@@ -4,7 +4,7 @@
  */
 
 import { LayoutHandler } from "../layout_handler.jsx";
-import { buildRecommendationCounts, indexRecommendationsByTable } from "./recommendationHelpers.js";
+import { build_recommendation_counts, index_recommendations_by_table } from "./recommendationHelpers.js";
 
 /**
  * Normalize column names for React Flow handles
@@ -21,20 +21,14 @@ export function buildColumnHandleId(columnName) {
   return `col-${value || "unknown"}`;
 }
 
-/**
- * Convert API table data to React Flow node format
- * @param {Array} tables - Array of table objects from API
- * @param {Object} indexedRecommendations - Recommendations indexed by table ID
- * @returns {Array} Array of React Flow node objects
- */
 export function transformTablesToNodes(tables, indexedRecommendations = {}) {
   return tables.map((table, i) => {
     const tableName = table.table_name;
     const schemaName = table.table_schema;
     const nodeId = `${schemaName}.${tableName}`;
     
-    const tableRecommendations = indexedRecommendations[nodeId.toLowerCase()] || [];
-    const counts = buildRecommendationCounts(tableRecommendations);
+    const tableRecommendations = index_recommendations_by_table[nodeId.toLowerCase()] || [];
+    const counts = build_recommendation_counts(tableRecommendations);
 
     return {
       id: nodeId,
@@ -115,7 +109,7 @@ export function mapSchemaToFlow(schema, relationships = [], recommendations = []
     return { nodes: [], edges: [] };
   }
 
-  const indexedRecommendations = indexRecommendationsByTable(recommendations, "public");
+  const indexedRecommendations = index_recommendations_by_table(recommendations, "public");
   const nodes = transformTablesToNodes(tables, indexedRecommendations);
   const edges = transformRelationshipsToEdges(relationships);
 
