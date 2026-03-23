@@ -2,8 +2,9 @@
  * Main schema explorer page component
  */
 
-import React from 'react';
-import { ReactFlow, Background, Controls, useReactFlow } from '@xyflow/react';
+import { useState, useCallback } from 'react';
+import { ReactFlow, Background, useReactFlow, MiniMap, getNodesBounds, getViewportForBounds } from '@xyflow/react';
+import { toPng, toJpeg, toSvg } from 'html-to-image';
 import TopBar from '../components/TopBar.jsx';
 import EnhancedRecommendationsSidebar from '../components/EnhancedRecommendationsSidebar.jsx';
 import ErdNode from '../components/ErdNode.jsx';
@@ -33,6 +34,9 @@ export default function SchemaExplorer() {
     getEnhancedNodes,
     findNode,
   } = useFlowGraph();
+
+  // Minimap visibility
+  const [showMinimap, setShowMinimap] = useState(true);
 
   // Sidebar state management
   const sidebarState = useSidebarState();
@@ -104,6 +108,46 @@ export default function SchemaExplorer() {
   // Enhanced nodes with interaction handlers
   const enhancedNodes = getEnhancedNodes(handleRecommendationIconClick);
 
+  // Schema export
+  const handleExport = useCallback((format) => {
+    const viewport = document.querySelector('.react-flow__viewport');
+    if (!viewport) return;
+
+    const nodesBounds = getNodesBounds(enhancedNodes);
+    const padding = 50;
+    const width = nodesBounds.width + padding * 2;
+    const height = nodesBounds.height + padding * 2;
+    const { x, y, zoom } = getViewportForBounds(nodesBounds, width, height, 0.5, 2, padding);
+
+    const bgColor = getComputedStyle(document.documentElement).getPropertyValue('--bg').trim() || '#f8fafc';
+    const options = {
+      width,
+      height,
+      style: {
+        width: `${width}px`,
+        height: `${height}px`,
+        transform: `translate(${x}px, ${y}px) scale(${zoom})`,
+      },
+    };
+
+    const exporters = {
+      png: () => toPng(viewport, { ...options, backgroundColor: bgColor }),
+      jpeg: () => toJpeg(viewport, { ...options, backgroundColor: bgColor, quality: 0.95 }),
+      svg: () => toSvg(viewport, { ...options, backgroundColor: bgColor }),
+    };
+
+    const ext = format || 'png';
+    const exporter = exporters[ext];
+    if (!exporter) return;
+
+    exporter().then((dataUrl) => {
+      const a = document.createElement('a');
+      a.setAttribute('download', `schema.${ext}`);
+      a.setAttribute('href', dataUrl);
+      a.click();
+    });
+  }, [enhancedNodes]);
+
   // Loading state
   if (graphLoading) {
     return <FullScreenLoader message="Loading schema..." />;
@@ -125,6 +169,9 @@ export default function SchemaExplorer() {
       <TopBar 
         search={tableSearch} 
         onOpenAllRecommendations={sidebarState.toggleAllRecommendations}
+        showMinimap={showMinimap}
+        onToggleMinimap={() => setShowMinimap(prev => !prev)}
+        onExport={handleExport}
       />
       
       <div className="app-content">
@@ -135,12 +182,26 @@ export default function SchemaExplorer() {
             nodes={enhancedNodes}
             edges={flow.edges}
             onNodesChange={onNodesChange}
-            nodesDraggable={true}
+            nodesDraggable={false}
             fitView
             proOptions={{ hideAttribution: true }}
           >
             <Background />
-            {/* <Controls /> */}
+            {showMinimap && (
+              <MiniMap
+                position="bottom-left"
+                nodeStrokeWidth={2}
+                nodeColor={(node) => {
+                  if (node.type === 'schemaGroup') return 'transparent';
+                  const rec = node.data?.recommendations?.counts;
+                  if (rec?.error > 0) return '#ef4444';
+                  if (rec?.warning > 0) return '#f59e0b';
+                  return 'var(--surface-strong)';
+                }}
+                maskColor="var(--bg)"
+                style={{ width: 180, height: 130 }}
+              />
+            )}
           </ReactFlow>
         </div>
 
